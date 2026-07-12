@@ -14,8 +14,8 @@ export const Route = createFileRoute("/")({
     meta: [
       { title: "Cosmic Blueprint — Professional Astrological Intelligence" },
       { name: "description", content: "Generate the most accurate natal charts powered by Swiss Ephemeris. Tropical zodiac, Placidus houses, geocentric Western astrology." },
-      { property: "og:title", content: "Cosmic Blueprint" },
-      { property: "og:description", content: "Swiss Ephemeris-powered astrological intelligence." },
+      { property: "og:title", content: "Cosmic Blueprint — Professional Astrological Intelligence" },
+      { property: "og:description", content: "Generate the most accurate natal charts powered by Swiss Ephemeris. Tropical zodiac, Placidus houses, geocentric Western astrology." },
     ],
   }),
   component: Index,
