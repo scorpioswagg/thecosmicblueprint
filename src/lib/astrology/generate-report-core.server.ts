@@ -82,6 +82,43 @@ export interface GeneratedReportPayload {
   generatedAt: string;
 }
 
+const MASTER_PROMPT = `You are an expert natal-chart analyst, report writer, and synthesis engine. Your task is to generate a long-form, premium, book-quality astrology report based only on the provided birth data and chart factors.
+
+Use the user's exact birth date, exact birth time, and birthplace to calculate and interpret the natal chart. If birth time is missing, clearly state which chart factors are uncertain and adjust interpretation accordingly.
+
+Accuracy rules:
+- Do not use vague filler, generic horoscope language, or unsupported claims.
+- Every major interpretation must be anchored to specific chart evidence: planets, signs, houses, aspects, dispositors, angularity, dignity, rulerships, and relevant transits/progressions when requested.
+- Distinguish between natal promise, timing activation, and psychological expression.
+- When multiple chart factors point to different possibilities, explain the tension rather than flattening it.
+- Be specific, practical, and internally consistent.
+- Do not claim certainty where the chart suggests probabilities or tendencies.
+
+Output standards:
+- Write a 20+ page equivalent report with substantial depth.
+- Use clear section headings (## H2, ### H3) and a logical flow from overview to specifics to applications.
+- Include synthesis, examples, timing guidance, pitfalls, remedies, and practical steps.
+- Make the language insightful, grounded, and empowering.
+- Avoid repetition and filler. No emojis.
+
+Required structure for every report (adapt the labels to the topic):
+1. Executive overview.
+2. Core chart signatures that shape this topic.
+3. Detailed interpretation of the key planets, houses, signs, aspects, and rulers.
+4. Strengths, gifts, and underused potential.
+5. Challenges, distortions, and shadow patterns.
+6. Timing windows, transits, or progression-based activations if relevant.
+7. Practical strategies, rituals, habits, or action steps.
+8. Final synthesis with a concise, memorable conclusion.
+
+Use bullet lists, tables, and short scenario examples when useful. Keep the report original, nuanced, and deeply personalized to the chart.
+
+CHAPTER BINDING RULES (STRICT):
+- Every chapter (## section) MUST open with a short "Chart Anchors" line in italics listing the exact placements and aspects from the CHART DATA that this chapter interprets.
+- Every paragraph MUST explicitly cite at least one real placement, house cusp, or aspect from the CHART DATA.
+- Never invent or hallucinate any position, aspect, degree, or house assignment. Use only the CHART DATA supplied.
+- Tropical zodiac, Placidus houses, geocentric Western astrology.`;
+
 export async function generateReportMarkdown(input: {
   reportId: string;
   chart: ReportChartInput;
@@ -95,41 +132,39 @@ export async function generateReportMarkdown(input: {
   const gateway = createLovableAiGatewayProvider(key);
   const chartBlock = chartToPrompt(input.chart);
 
-  const system = `You are a master astrologer writing for the Cosmic Blueprint platform.
-
-ABSOLUTE RULES:
-- Use ONLY the placements, houses, and aspects given. Never invent or hallucinate any position, aspect, degree, or house assignment.
-- Reference SPECIFIC placements by name (e.g., "your Moon in Cancer in the 4th House").
-- Tropical zodiac, Placidus houses, geocentric Western astrology.
-- Do not predict literal future events; describe patterns, energies, and choices.
-- Use markdown: H2 (##) per section, H3 (###) for subsections. No emojis.
-- Maintain a literate, grounded, modern psychological-astrology voice.
-
-CHAPTER BINDING RULES (STRICT):
-- Every chapter (## section) MUST open with a short "Chart Anchors" line in italics listing the exact placements and aspects from the CHART DATA that this chapter interprets.
-- Every paragraph MUST explicitly cite at least one real placement, house cusp, or aspect from the CHART DATA.
-- Never write a paragraph of generic astrology with no citation.
-- Do not paraphrase placements in ways that change the data.
-
-REPORT FRAMING:
-${def.systemFraming}`;
+  const userDataBlock = `USER DATA INPUT
+- Birth date: ${input.chart.input.date}
+- Exact birth time: ${input.chart.input.time}
+- Birthplace: ${input.chart.input.place}
+- Time zone: ${input.chart.input.timezone}
+- Chart system: Tropical / Placidus / Geocentric Western
+- Report focus: ${def.title}
+- Special priorities: ${def.tagline}`;
 
   const sectionsList = def.sections.map((s, i) => `${i + 1}. ${s}`).join("\n");
-  const prompt = `Write the **${def.title}** report for ${input.chart.input.name}.
 
-Target length: ~${def.targetWords} words.
+  const reportModule = def.promptModule
+    ? def.promptModule
+    : `REPORT FRAMING:
+${def.systemFraming}
 
 Required sections (use exactly these as ## H2 headings, in order):
-${sectionsList}
+${sectionsList}`;
+
+  const prompt = `${userDataBlock}
+
+${reportModule}
+
+Target length: ~${def.targetWords} words.
 
 CHART DATA:
 ${chartBlock}
 
-Begin the report now. Do not include a preamble or restate the chart data; weave it into interpretation.`;
+Write the **${def.title}** report for ${input.chart.input.name} now. Do not include a preamble or restate the chart data verbatim; weave it into interpretation.`;
 
   const { text } = await generateText({
     model: gateway("google/gemini-3-flash-preview"),
-    system,
+    system: MASTER_PROMPT,
     prompt,
   });
 

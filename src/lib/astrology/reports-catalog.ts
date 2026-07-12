@@ -3,7 +3,7 @@ export interface ReportDefinition {
   title: string;
   tagline: string;
   icon: string;
-  category: "Core" | "Relationships" | "Growth" | "Timing" | "Vocation" | "Esoteric" | "Intimacy (18+)" | "Patriotic Collection";
+  category: "Core" | "Relationships" | "Growth" | "Timing" | "Vocation" | "Esoteric" | "Intimacy (18+)" | "Patriotic Collection" | "Signature Series";
   /** Marks reports with mature/explicit sexual content. UI should gate behind an 18+ confirmation. */
   adult?: boolean;
   /** Sections the LLM must produce, in order. */
@@ -12,6 +12,8 @@ export interface ReportDefinition {
   targetWords: number;
   /** Specialized framing handed to the LLM. */
   systemFraming: string;
+  /** Optional full "report module" prompt (Signature Series style). If set, the engine uses this verbatim as the user-facing report instructions. */
+  promptModule?: string;
 }
 
 export const REPORTS: ReportDefinition[] = [
@@ -1315,6 +1317,399 @@ export const REPORTS: ReportDefinition[] = [
     systemFraming:
       "Elder, dignified, cinematic. Weave a coherent legacy narrative from real placements. Close with a co-authored life mission statement.",
   },
+  // ============================================================
+  // SIGNATURE SERIES — Master-prompt engine (20–30 page reports)
+  // Each uses `promptModule` to inject the exact improved prompt.
+  // ============================================================
+  ...([
+    {
+      id: "sig-soul-purpose-activation",
+      title: "Soul Purpose Activation Code",
+      tagline: "North Node, MC, 2nd house, Jupiter — the activation code of your calling.",
+      icon: "☊",
+      sections: ["Soul Mission Statement", "Core Life Themes", "Highest-Expression Path", "Fallback Patterns That Block It", "30-Day / 6-Month / 2-Year Activation Steps", "Timing Windows for Breakthroughs", "Daily, Weekly & Monthly Practices", "Closing Synthesis"],
+      module: `Generate a premium 20–30 page Soul Purpose Activation Code report based on the full natal chart. Focus especially on the North Node, South Node as context, 10th house/MC, 2nd house, Jupiter, chart ruler, and any planets aspecting the luminaries, angles, or nodal axis.
+
+Analyze: soul direction, vocation-linked purpose, identity development, values alignment, material grounding, confidence architecture, and the evolutionary tension between comfort and growth. Include dispositors, house rulers, angular planets, and current transits/progressions that activate purpose.
+
+Deliver:
+- A clear soul mission statement.
+- 5–7 core life themes with chart evidence.
+- The highest-expression path and the fallback patterns that block it.
+- Activation steps for the next 30 days, 6 months, and 2 years.
+- Timing windows for breakthroughs, pivots, and commitments.
+- Daily, weekly, and monthly practices that reinforce purpose.
+- A closing synthesis describing how purpose becomes visible through action, service, and consistency.
+
+Tone: wise, precise, motivating, and deeply practical.`,
+    },
+    {
+      id: "sig-karmic-debt",
+      title: "Karmic Debt & Past Life Patterns",
+      tagline: "South Node, 12th house, Saturn, Pluto, Chiron — the soul's unfinished business.",
+      icon: "☋",
+      sections: ["Karmic Pattern Map", "Symbolic Past-Life Themes", "Present-Life Triggers", "What the Soul Must Outgrow", "Healing & Release Practices", "Shadow-Work Prompts", "Boundary Corrections", "Resolution Path"],
+      module: `Generate a 20–30 page Karmic Debt & Past Life Patterns report. Center the South Node, 12th house, Saturn, Pluto, Chiron, lunar aspects, and any planets in hard aspect to the nodal axis or 12th-house ruler.
+
+Explore: repetitive soul lessons, inherited unfinished business, fear patterns, repression, sacrifice dynamics, control issues, guilt/shame conditioning, and the difference between a familiar wound and an actual destiny. Distinguish karmic momentum from conscious choice.
+
+Deliver:
+- A detailed karmic pattern map.
+- Likely past-life themes expressed symbolically through the chart.
+- Present-life triggers that reactivate old loops.
+- What the soul already knows too well and must outgrow.
+- Healing, release, and integration practices.
+- Shadow-work prompts and boundary-setting corrections.
+- A practical resolution path focused on accountability and transformation.
+
+Tone: compassionate, honest, non-fatalistic, and liberating.`,
+    },
+    {
+      id: "sig-abundance-blueprint",
+      title: "Abundance & Money Flow Blueprint",
+      tagline: "2nd, 8th, Venus, Jupiter, Pluto, Saturn — your wealth architecture.",
+      icon: "$",
+      sections: ["Money Personality Profile", "Core Blocks to Abundance", "Best Income Channels", "Debt, Risk, Saving, Generosity", "Prosperity System", "Financial Timing Windows", "Habits to Stabilize & Expand Wealth"],
+      module: `Generate a 20–30 page Abundance & Money Flow Blueprint report. Analyze the 2nd house, 8th house, Venus, Jupiter, Pluto, Saturn, and all aspects relevant to earning, receiving, preserving, investing, and sharing money.
+
+Include money mindset signatures, self-worth coding, spending impulses, resource accumulation style, inheritance/shared-resource themes, wealth fears, power dynamics around money, and the conditions under which prosperity flows most naturally.
+
+Deliver:
+- A money personality profile.
+- Core blocks to abundance and how they were formed.
+- Best income channels and monetization styles.
+- Attitudes toward debt, risk, saving, generosity, and investment.
+- A prosperity system tailored to the chart.
+- Timing windows for financial growth, contraction, and reinvestment.
+- Concrete habits to stabilize and expand wealth over time.
+
+Tone: realistic, strategic, empowering, and specific.`,
+    },
+    {
+      id: "sig-relationship-karma",
+      title: "Relationship Karma & Soul Contracts",
+      tagline: "7th, Venus, Mars, Juno, Moon, Saturn, Nodes — the karmic love map.",
+      icon: "∞",
+      sections: ["Partner Types the Chart Attracts", "Recurring Karmic Loops", "Red Flags & Green Flags", "Soul-Contract Dynamics", "Healing Strategies for Intimacy", "Timing for Relationship Milestones"],
+      module: `Generate a 20–30 page Relationship Karma & Soul Contracts report. Prioritize the 7th house, Venus, Mars, Juno, the Moon, Saturn, the nodal axis, and any relationship-relevant aspects or rulers.
+
+Examine partner patterns, attachment tendencies, commitment dynamics, conflict style, attraction signatures, and karmic repetition in love. Distinguish genuine soul growth from projection, fantasy, and dependency.
+
+Deliver:
+- The type of partner the chart naturally attracts.
+- Relationship lessons and recurring karmic loops.
+- Red flags, green flags, and compatibility themes.
+- Soul-contract dynamics and what they are meant to teach.
+- Healing strategies for intimacy, trust, boundaries, and communication.
+- Timing for meaningful relationship developments.
+
+Tone: emotionally intelligent, direct, compassionate, and grounded.`,
+    },
+    {
+      id: "sig-career-destiny",
+      title: "Career Destiny & Vocation Calling",
+      tagline: "MC, 10th, 6th, Saturn, Jupiter, chart ruler — the work you were built for.",
+      icon: "♃",
+      sections: ["Ideal Careers & Industries", "Natural Operating Style", "Leadership & Visibility Potential", "Growth Phases & Pivot Points", "Burnout Risks & Sustainability", "Step-by-Step Vocational Roadmap", "How Success Is Defined in This Chart"],
+      module: `Generate a 20–30 page Career Destiny & Vocation Calling report. Focus on the Midheaven, 10th house, 6th house, Saturn, Jupiter, the chart ruler, and any planets connected to public role, mastery, service, leadership, or visibility.
+
+Identify vocational themes, leadership style, work pace, authority relationship, professional strengths, performance blocks, and the difference between "good at" and "called to." Include the role of transits/progressions in career timing.
+
+Deliver:
+- Ideal career paths, industries, and roles.
+- The user's natural professional operating style.
+- Leadership and visibility potential.
+- Growth phases and pivot points.
+- Burnout risks and sustainability strategies.
+- A step-by-step vocational roadmap.
+- Guidance on how success is defined in this chart.
+
+Tone: ambitious, practical, and clarifying.`,
+    },
+    {
+      id: "sig-intuition-psychic",
+      title: "Intuition & Psychic Development Guide",
+      tagline: "Neptune, Moon, Mercury, 12th, 8th — your intuitive operating system.",
+      icon: "☽",
+      sections: ["Intuitive Strengths & Blind Spots", "Development Progression", "Grounding, Discernment & Protection", "Dreamwork, Meditation & Journaling", "Safe Real-World Applications", "Warnings: Overload & Delusion"],
+      module: `Generate a 20–30 page Intuition & Psychic Development Guide. Prioritize Neptune, the Moon, Mercury, Pisces/Scorpio signatures, the 12th house, the 8th house, and any aspects showing sensitivity, permeability, imagination, or hidden knowing.
+
+Distinguish between intuition, anxiety, projection, wishful thinking, and psychic-style perception. Identify the user's likely intuitive channel and how it works best.
+
+Deliver:
+- Intuitive strengths and blind spots.
+- A clear intuitive development progression.
+- Grounding, discernment, and protection techniques.
+- Dreamwork, meditation, journaling, and body-based practices.
+- Safe real-world applications of psychic sensitivity.
+- Warning signs of overload, delusion, or energetic confusion.
+
+Tone: mystical but disciplined, practical, and safe.`,
+    },
+    {
+      id: "sig-family-ancestral",
+      title: "Family Dynamics & Ancestral Healing",
+      tagline: "4th, IC, Moon, Saturn, Pluto — the lineage patterns.",
+      icon: "⌂",
+      sections: ["Family-System Analysis", "Childhood Emotional Imprint", "Ancestral Gifts & Burdens", "Conflict & Caretaking Dynamics", "Boundaries & Reparenting", "Healing Rituals & Narrative Rewrites"],
+      module: `Generate a 20–30 page Family Dynamics & Ancestral Healing report. Focus on the 4th house, IC, Moon, Saturn, Pluto, the rulers of the 4th house, and generational planets or aspects that describe inherited family patterns.
+
+Explore emotional conditioning, family roles, loyalty binds, ancestral wounds, survival strategies, and the inherited strengths that can be consciously reclaimed.
+
+Deliver:
+- Family-system pattern analysis.
+- Childhood emotional imprint themes.
+- Ancestral gifts and burdens.
+- Conflict patterns and caretaking dynamics.
+- Boundary and reparenting strategies.
+- Healing rituals, mindset shifts, and narrative rewrites.
+
+Tone: compassionate, clear-eyed, and reparative.`,
+    },
+    {
+      id: "sig-creativity-block",
+      title: "Creativity Block Buster",
+      tagline: "5th, Uranus, Mercury–Venus, Sun, Moon — from stall to sustained flow.",
+      icon: "✦",
+      sections: ["Your Creative DNA", "Block Sources & Roots", "Best Environments & Collaborators", "Exercises to Restart Flow", "Timing for Breakthroughs & Public Sharing", "From Inspiration to Finished Work"],
+      module: `Generate a 20–30 page Creativity Block Buster report. Analyze the 5th house, Uranus, Mercury-Venus contacts, the Sun, the Moon, and aspects involving Saturn, Neptune, or Pluto that can inhibit or intensify expression.
+
+Identify the user's creative medium, natural style, inspiration sources, and the exact reasons creativity may stall, fragment, or self-censor.
+
+Deliver:
+- The user's creative DNA.
+- Block sources and their chart-based roots.
+- Best environments, rhythms, and collaborators.
+- Exercises to restart flow and sustain output.
+- Timing for creative breakthroughs and public sharing.
+- A plan to move from inspiration to finished work.
+
+Tone: energizing, specific, and artistically intelligent.`,
+    },
+    {
+      id: "sig-spiritual-timeline",
+      title: "Spiritual Awakening Timeline",
+      tagline: "Neptune, Uranus, Pluto, 9th, 12th — the arc of awakening.",
+      icon: "✧",
+      sections: ["Phase-by-Phase Spiritual Timeline", "Key Transits & Progressions", "Common Challenges at Each Stage", "Integration Tools (Body, Mind, Emotion, Spirit)", "Practices That Deepen Wisdom", "Long-Term Path of Maturation"],
+      module: `Generate a 20–30 page Spiritual Awakening Timeline report. Focus on Neptune transits, Uranus activations, the 9th house, the 12th house, Pluto, the Moon, and any outer-planet progressions or long-cycle triggers.
+
+Map the user's likely awakening phases, disillusionments, breakthrough moments, identity shifts, spiritual crises, and integration periods. Distinguish awakening from destabilization.
+
+Deliver:
+- A phase-by-phase spiritual timeline.
+- Key transits/progressions and their meaning.
+- Common challenges at each stage.
+- Integration tools for body, mind, emotion, and spirit.
+- Practices that deepen wisdom without escaping reality.
+- A long-term path of spiritual maturation.
+
+Tone: elevated, steady, and grounded in integration.`,
+    },
+    {
+      id: "sig-communication-voice",
+      title: "Communication Mastery & Voice Power",
+      tagline: "Mercury, 3rd, Gemini/Sag, Moon, Mars, Saturn — your voice, sharpened.",
+      icon: "✎",
+      sections: ["Strengths & Distortions", "The Clearest Version of Your Voice", "Speaking, Writing, Teaching, Sales Potential", "Conflict-Resolution Patterns & Upgrades", "Exercises for Clarity, Timing & Impact", "Timing for Communication Opportunities"],
+      module: `Generate a 20–30 page Communication Mastery & Voice Power report. Focus on Mercury, the 3rd house, Gemini/Sagittarius signatures, the Moon, Mars, Saturn, and any aspects to the Ascendant, MC, or 11th house relevant to public voice.
+
+Examine thinking style, speaking style, writing style, persuasion ability, conflict language, social communication, and confidence in self-expression.
+
+Deliver:
+- Communication strengths and distortions.
+- The clearest version of the user's voice.
+- Public speaking, writing, teaching, or sales potential.
+- Conflict-resolution patterns and upgrades.
+- Exercises to sharpen clarity, timing, and impact.
+- Timing for communication-related opportunities.
+
+Tone: confident, insightful, and highly practical.`,
+    },
+    {
+      id: "sig-travel-adventure",
+      title: "Travel & Adventure Destiny",
+      tagline: "9th, Jupiter, Sagittarius, Uranus, Moon — journeys that transform.",
+      icon: "✈",
+      sections: ["Meaningful Travel Styles & Themes", "Why You Seek Expansion", "Best Trips for Learning, Healing, Reinvention", "Timing for Travel & Relocation", "Soul Lessons Through Exploration", "Practical Planning Guidance"],
+      module: `Generate a 20–30 page Travel & Adventure Destiny report. Prioritize the 9th house, Jupiter, Sagittarius, Uranus, the Moon, and any rulers/aspects showing travel, relocation, exploration, study, or cross-cultural expansion.
+
+Identify the types of journeys that transform the user most, what travel awakens in them, and how movement serves growth, purpose, or healing.
+
+Deliver:
+- Meaningful travel styles and destination themes.
+- Why the user seeks adventure or expansion.
+- Best kinds of trips for learning, healing, or reinvention.
+- Timing for major travel or relocation opportunities.
+- Soul lessons that emerge through exploration.
+- Practical planning guidance aligned to the chart.
+
+Tone: expansive, vivid, and actionable.`,
+    },
+    {
+      id: "sig-emotional-intelligence",
+      title: "Emotional Intelligence & Empathy Edge",
+      tagline: "Moon, Cancer, 4th, 12th, Neptune — regulation and relational wisdom.",
+      icon: "❀",
+      sections: ["Emotional Architecture Profile", "Empathy Strengths & Vulnerabilities", "Triggers, Defenses & Soothing Patterns", "Tools for Regulation & Boundaries", "Practices for Emotional Mastery"],
+      module: `Generate a 20–30 page Emotional Intelligence & Empathy Edge report. Focus on the Moon, Cancer placements, the 4th house, the 12th house, Neptune, and aspects showing emotional sensitivity, containment, or regulation challenges.
+
+Assess emotional processing, empathy style, attunement, reactivity, emotional memory, and the difference between compassion and over-absorption.
+
+Deliver:
+- Emotional architecture profile.
+- Empathy strengths and vulnerability points.
+- Triggers, defenses, and soothing patterns.
+- Tools for regulation, boundaries, and discernment.
+- Practices for emotional mastery and relational wisdom.
+
+Tone: emotionally intelligent, supportive, and precise.`,
+    },
+    {
+      id: "sig-friendship-tribe",
+      title: "Friendship & Soul Tribe Finder",
+      tagline: "11th, Uranus, Venus, Mercury, Moon — the community you belong to.",
+      icon: "◈",
+      sections: ["Friend & Tribe Archetypes", "Community-Building Strategies", "Group-Role Tendencies & Leadership", "Friendship Red Flags & Boundaries", "Best Ways to Find Aligned Communities"],
+      module: `Generate a 20–30 page Friendship & Soul Tribe Finder report. Focus on the 11th house, Uranus, Venus in social houses, Mercury, the Moon, and chart factors describing community, belonging, and group dynamics.
+
+Identify the user's ideal friendship ecosystem, how they contribute to groups, what social environments energize them, and what patterns create disconnection or toxicity.
+
+Deliver:
+- Friend and tribe archetypes that fit the chart.
+- Community-building strategies.
+- Group-role tendencies and leadership style.
+- Friendship red flags and boundary issues.
+- Best ways to find aligned communities.
+
+Tone: warm, perceptive, and socially smart.`,
+    },
+    {
+      id: "sig-addiction-sabotage",
+      title: "Addiction & Self-Sabotage Decoder",
+      tagline: "Neptune, 12th, Pluto, Mars, Saturn — the loops and how to break them.",
+      icon: "⊘",
+      sections: ["Self-Sabotage Pattern Mapping", "Trigger States & Coping Loops", "Emotional Needs Hidden in the Behavior", "Recovery-Oriented Replacement Systems", "Accountability, Habit & Environment Redesign", "Resilience Plan for Relapse Prevention"],
+      module: `Generate a 20–30 page Addiction & Self-Sabotage Decoder report. Focus on Neptune, the 12th house, Pluto, Mars, Saturn, and aspects that indicate escapism, compulsion, numbness, obsession, or repeated self-defeating cycles.
+
+Trace the root causes of self-sabotage, the emotional payoff it provides, the trigger sequence, and the chart signatures of recovery potential.
+
+Deliver:
+- Self-sabotage pattern mapping.
+- Likely trigger states and coping loops.
+- Emotional needs hidden inside the behavior.
+- Recovery-oriented replacement systems.
+- Accountability, habit, and environment redesign strategies.
+- A resilience plan for relapse prevention and recommitment.
+
+Tone: compassionate, honest, and empowering.`,
+    },
+    {
+      id: "sig-aging-wisdom",
+      title: "Aging Gracefully & Wisdom Years",
+      tagline: "Saturn cycles, 2nd Saturn return, Uranus opposition, 8th, 9th — the elder path.",
+      icon: "☖",
+      sections: ["Key Developmental Phases of Later Life", "Relationship to Aging, Authority & Dignity", "Longevity, Meaning & Legacy Themes", "Health & Rhythm as Symbolic Guidance", "Practices for Wisdom, Relevance & Vitality"],
+      module: `Generate a 20–30 page Aging Gracefully & Wisdom Years report. Focus on Saturn cycles, the second Saturn return, Uranus later-life activations, the 8th and 9th houses, and any planets tied to legacy, endurance, wisdom, or reinvention.
+
+Describe the soul's maturation path across later life, including evolving priorities, authority, freedom, health, purpose, and the building of legacy over time.
+
+Deliver:
+- Key developmental phases of later life.
+- The user's relationship to aging, authority, and dignity.
+- Longevity, meaning, and legacy themes.
+- Health and rhythm considerations as symbolic guidance.
+- Practices to support wisdom, relevance, and vitality.
+
+Tone: dignified, encouraging, and future-oriented.`,
+    },
+    {
+      id: "sig-ecological-role",
+      title: "Environmental & Ecological Soul Role",
+      tagline: "Earth signs, 6th, 4th, Pluto, Saturn, Moon — stewardship as vocation.",
+      icon: "♁",
+      sections: ["Your Ecological Sensitivity & Role", "How the Chart Supports Stewardship", "Habits, Career Links & Lifestyle Choices", "Why This Matters to Your Chart", "Realistic Action Plan"],
+      module: `Generate a 20–30 page Environmental & Ecological Soul Role report. Focus on Earth sign emphasis, the 6th house, the 4th house, Pluto, Saturn, the Moon, and any chart factors connected to stewardship, sustainability, land, systems, or repair.
+
+Identify how the user is called to relate to the natural world, environmental responsibility, and practical planetary care.
+
+Deliver:
+- The user's ecological sensitivity and role.
+- Practical ways their chart supports stewardship.
+- Habits, career links, and lifestyle choices that align with the Earth.
+- Emotional and spiritual reasons this matters to their chart.
+- A realistic action plan for living the role.
+
+Tone: grounded, purposeful, and mission-driven.`,
+    },
+    {
+      id: "sig-dreamwork",
+      title: "Dreamwork & Subconscious Mastery",
+      tagline: "Neptune, Moon, 12th, Pisces — decoding the inner theater.",
+      icon: "☾",
+      sections: ["Dream Interpretation Keys", "Recall & Recording System", "Lucid Dreaming & Incubation Practices", "Subconscious Reprogramming Methods", "Using Dream Material for Healing & Insight"],
+      module: `Generate a 20–30 page Dreamwork & Subconscious Mastery report. Prioritize Neptune, the Moon, the 12th house, Pisces, and any aspects to Mercury, Pluto, or Saturn that affect dream recall, memory, symbolism, and subconscious patterning.
+
+Analyze dream style, symbolic language, recurring dream themes, subconscious defenses, and the relationship between sleep, emotion, and intuition.
+
+Deliver:
+- Dream interpretation keys tailored to the chart.
+- Dream recall and recording system.
+- Lucid dreaming and incubation practices.
+- Subconscious reprogramming methods.
+- How to use dream material for healing and insight.
+
+Tone: contemplative, practical, and psychologically informed.`,
+    },
+    {
+      id: "sig-reincarnation-eternal",
+      title: "Reincarnation & Eternal Self Report",
+      tagline: "Nodes, Pluto, 12th, Saturn, Chiron — the soul across lifetimes.",
+      icon: "∞",
+      sections: ["Multi-Life Themes & Repeating Lessons", "Evolutionary Direction This Incarnation", "Symbols of Memory, Mastery & Release", "What Must Be Integrated Now", "Eternal Identity & Present Purpose"],
+      module: `Generate a 20–30 page Reincarnation & Eternal Self report. Focus on the lunar nodes, Pluto, the 12th house, Saturn, Chiron, and any indicators of soul memory, unfinished business, or evolutionary continuity.
+
+Explore the soul's long arc across lifetimes as symbolically indicated by the chart, while keeping the interpretation grounded and non-literal when needed.
+
+Deliver:
+- Multi-life themes and repeating soul lessons.
+- The user's evolutionary direction in this incarnation.
+- Symbols of memory, mastery, and release.
+- What must be integrated now to evolve further.
+- A synthesis of eternal identity and present-life purpose.
+
+Tone: profound, respectful, and thoughtful.`,
+    },
+    {
+      id: "sig-daily-ritual",
+      title: "Daily Cosmic Alignment Ritual Guide",
+      tagline: "Rising, Sun, Moon, Mercury, Venus, Mars, chart ruler, current transits.",
+      icon: "◉",
+      sections: ["Morning, Midday, Evening Rituals", "Weekly & Monthly Rituals", "Chart-Specific Affirmations", "Transit-Based Adjustment Rules", "Staying Aligned During Stress or Drift", "Sustainable Practice Stack"],
+      module: `Generate a 20–30 page Daily Cosmic Alignment Ritual Guide. Use the rising sign, Sun, Moon, Mercury, Venus, Mars, chart ruler, and current transits to build a personalized routine system.
+
+Create a practical ritual architecture that supports energy, focus, emotional regulation, creativity, productivity, and spiritual alignment across daily, weekly, and monthly cycles.
+
+Deliver:
+- Morning, midday, evening, weekly, and monthly rituals.
+- Affirmations matched to the chart, not generic affirmations.
+- Transit-based adjustment rules.
+- A simple system for staying aligned during stress or drift.
+- A sustainable practice stack the user can realistically maintain.
+
+Tone: practical, elegant, and deeply personalized.`,
+    },
+  ] as Array<{ id: string; title: string; tagline: string; icon: string; sections: string[]; module: string }>).map((r): ReportDefinition => ({
+    id: r.id,
+    title: r.title,
+    tagline: r.tagline,
+    icon: r.icon,
+    category: "Signature Series",
+    targetWords: 6000,
+    sections: r.sections,
+    systemFraming: r.tagline,
+    promptModule: r.module,
+  })),
 ];
 
 export function getReport(id: string): ReportDefinition | undefined {
