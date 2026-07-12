@@ -3,7 +3,7 @@ export interface ReportDefinition {
   title: string;
   tagline: string;
   icon: string;
-  category: "Core" | "Relationships" | "Growth" | "Timing" | "Vocation" | "Esoteric" | "Intimacy (18+)" | "Patriotic Collection";
+  category: "Core" | "Relationships" | "Growth" | "Timing" | "Vocation" | "Esoteric" | "Intimacy (18+)" | "Patriotic Collection" | "Signature Series";
   /** Marks reports with mature/explicit sexual content. UI should gate behind an 18+ confirmation. */
   adult?: boolean;
   /** Sections the LLM must produce, in order. */
@@ -12,6 +12,8 @@ export interface ReportDefinition {
   targetWords: number;
   /** Specialized framing handed to the LLM. */
   systemFraming: string;
+  /** Optional full "report module" prompt (Signature Series style). If set, the engine uses this verbatim as the user-facing report instructions. */
+  promptModule?: string;
 }
 
 export const REPORTS: ReportDefinition[] = [
