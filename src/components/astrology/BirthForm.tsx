@@ -9,7 +9,7 @@ interface Props {
   canAutofill?: boolean;
 }
 
-export function BirthForm({ onSubmit, busy }: Props) {
+export function BirthForm({ onSubmit, busy, canAutofill = false }: Props) {
   const [name, setName] = useState("");
   const [month, setMonth] = useState("");
   const [day, setDay] = useState("");
