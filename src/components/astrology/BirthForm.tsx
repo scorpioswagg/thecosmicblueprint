@@ -6,9 +6,10 @@ import { KYLE_MERRITT_INPUT } from "@/lib/astrology/validation";
 interface Props {
   onSubmit: (input: BirthInput) => void;
   busy?: boolean;
+  canAutofill?: boolean;
 }
 
-export function BirthForm({ onSubmit, busy }: Props) {
+export function BirthForm({ onSubmit, busy, canAutofill = false }: Props) {
   const [name, setName] = useState("");
   const [month, setMonth] = useState("");
   const [day, setDay] = useState("");
@@ -100,10 +101,12 @@ export function BirthForm({ onSubmit, busy }: Props) {
     <form onSubmit={submit} className="glass rounded-2xl p-6 md:p-8 space-y-5 shadow-deep">
       <div className="flex items-center justify-between">
         <h2 className="font-display text-2xl text-gradient-gold">Birth Details</h2>
-        <button type="button" onClick={loadKyle}
-          className="text-xs uppercase tracking-widest text-gold hover:underline">
-          YOU MUST FIRST SIGN UP/SIGN IN FIRST.
-        </button>
+        {canAutofill && (
+          <button type="button" onClick={loadKyle}
+            className="text-xs uppercase tracking-widest text-gold hover:underline">
+            Autofill birth info
+          </button>
+        )}
       </div>
 
       <div className="rounded-xl border border-gold/20 bg-card/40 p-4 text-xs leading-relaxed text-muted-foreground space-y-1.5">
