@@ -6,6 +6,7 @@ import { KYLE_MERRITT_INPUT } from "@/lib/astrology/validation";
 interface Props {
   onSubmit: (input: BirthInput) => void;
   busy?: boolean;
+  canAutofill?: boolean;
 }
 
 export function BirthForm({ onSubmit, busy }: Props) {
