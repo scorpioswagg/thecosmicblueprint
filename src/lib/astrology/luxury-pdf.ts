@@ -124,7 +124,7 @@ function buildLuxuryReportDoc(report: GeneratedReport, chart: ChartCalculation):
   doc.setFont("times", "italic");
   doc.setFontSize(11);
   setColor(GOLD_SOFT);
-  doc.text("THE COSMIC BLUEPRINT PATRIOTIC COLLECTION\u2122", pageW / 2, pageH / 2 - 120, { align: "center" });
+  doc.text("THE COSMIC BLUEPRINT SIGNATURE SERIES\u2122", pageW / 2, pageH / 2 - 120, { align: "center" });
 
   // Ornament
   doc.setFont("times", "normal");
