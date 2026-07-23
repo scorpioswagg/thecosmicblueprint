@@ -5,7 +5,7 @@ import type { Database } from "@/integrations/supabase/types";
 function stripeClient() {
   const secret = process.env.STRIPE_SECRET_KEY;
   if (!secret) throw new Error("STRIPE_SECRET_KEY not configured");
-  return new Stripe(secret, { apiVersion: "2025-06-30.basil" });
+  return new Stripe(secret);
 }
 
 async function adminClient() {
@@ -47,7 +47,7 @@ export const Route = createFileRoute("/api/webhooks/stripe")({
           const session = event.data.object as Stripe.Checkout.Session;
           const db = await adminClient();
 
-          const { data: existing } = await db
+          const { data: existing } = await (db as any)
             .from("report_purchases")
             .select("id, status")
             .eq("stripe_session_id", session.id)
@@ -66,7 +66,7 @@ export const Route = createFileRoute("/api/webhooks/stripe")({
             return new Response("Missing session metadata", { status: 400 });
           }
 
-          const { error } = await db
+          const { error } = await (db as any)
             .from("report_purchases")
             .upsert(
               {
