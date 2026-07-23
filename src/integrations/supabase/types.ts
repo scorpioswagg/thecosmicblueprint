@@ -62,6 +62,36 @@ export type Database = {
         }
         Relationships: []
       }
+      price_change_logs: {
+        Row: {
+          changed_by: string
+          created_at: string
+          currency: string
+          id: string
+          new_price_cents: number
+          old_price_cents: number | null
+          report_id: string | null
+        }
+        Insert: {
+          changed_by: string
+          created_at?: string
+          currency?: string
+          id?: string
+          new_price_cents: number
+          old_price_cents?: number | null
+          report_id?: string | null
+        }
+        Update: {
+          changed_by?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          new_price_cents?: number
+          old_price_cents?: number | null
+          report_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           adult_consent: boolean
@@ -85,6 +115,176 @@ export type Database = {
           welcome_message_seen?: boolean
         }
         Relationships: []
+      }
+      promo_codes: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          discount_cents: number
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          max_uses: number | null
+          updated_at: string
+          uses_count: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          discount_cents?: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          updated_at?: string
+          uses_count?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          discount_cents?: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          updated_at?: string
+          uses_count?: number
+        }
+        Relationships: []
+      }
+      purchase_events: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          currency: string
+          event_type: string
+          id: string
+          is_free: boolean
+          metadata: Json
+          report_id: string
+          stripe_session_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount_cents?: number
+          created_at?: string
+          currency?: string
+          event_type: string
+          id?: string
+          is_free?: boolean
+          metadata?: Json
+          report_id: string
+          stripe_session_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          currency?: string
+          event_type?: string
+          id?: string
+          is_free?: boolean
+          metadata?: Json
+          report_id?: string
+          stripe_session_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      report_prices: {
+        Row: {
+          created_at: string
+          currency: string
+          id: string
+          is_active: boolean
+          is_default: boolean
+          price_cents: number
+          report_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          price_cents?: number
+          report_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          price_cents?: number
+          report_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      report_purchases: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          currency: string
+          id: string
+          is_free: boolean
+          paid_at: string | null
+          promo_code_id: string | null
+          report_id: string
+          status: string
+          stripe_payment_intent_id: string | null
+          stripe_session_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_cents?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          is_free?: boolean
+          paid_at?: string | null
+          promo_code_id?: string | null
+          report_id: string
+          status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          is_free?: boolean
+          paid_at?: string | null
+          promo_code_id?: string | null
+          report_id?: string
+          status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_purchases_promo_code_id_fkey"
+            columns: ["promo_code_id"]
+            isOneToOne: false
+            referencedRelation: "promo_codes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
