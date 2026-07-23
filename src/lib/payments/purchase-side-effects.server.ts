@@ -1,0 +1,60 @@
+import type { Database } from "@/integrations/supabase/types";
+
+interface SideEffectInput {
+  userId: string;
+  reportId: string;
+  stripeSessionId?: string;
+  amountCents: number;
+  currency: string;
+  isFree: boolean;
+}
+
+async function adminClient() {
+  const { createClient } = await import("@supabase/supabase-js");
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) throw new Error("Supabase admin credentials not configured");
+  return createClient<Database>(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
+
+export async function triggerPurchaseSideEffects(input: SideEffectInput) {
+  const db = await adminClient();
+
+  // 1) Record a side-effect audit log row.
+  await (db as any).from("purchase_events").insert({
+    user_id: input.userId,
+    report_id: input.reportId,
+    stripe_session_id: input.stripeSessionId ?? null,
+    event_type: "unlocked",
+    amount_cents: input.amountCents,
+    currency: input.currency,
+    is_free: input.isFree,
+    created_at: new Date().toISOString(),
+  });
+
+  // 2) Send transactional receipt / report-ready email via Resend when configured.
+  try {
+    const { sendReportReadyEmail } = await import("@/lib/payments/report-ready-email.server");
+    await sendReportReadyEmail(input);
+  } catch (e) {
+    console.error("[purchase-side-effects] email send failed", e);
+  }
+
+  // 3) Broadcast a real-time unlock event if Supabase realtime is available.
+  try {
+    await (db as any).channel("report-unlocks").send({
+      type: "broadcast",
+      event: "report_unlocked",
+      payload: {
+        user_id: input.userId,
+        report_id: input.reportId,
+        unlocked_at: new Date().toISOString(),
+      },
+    });
+  } catch (e) {
+    // Realtime may not be enabled; log only.
+    console.warn("[purchase-side-effects] broadcast skipped", e);
+  }
+}
