@@ -13,6 +13,7 @@ import { Route as McpRouteImport } from './routes/mcp'
 import { Route as AcademyRouteImport } from './routes/academy'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiSendReportRouteImport } from './routes/api/send-report'
+import { Route as AdminPricesRouteImport } from './routes/admin.prices'
 import { Route as AdminEmailsRouteImport } from './routes/admin.emails'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
@@ -39,6 +40,11 @@ const IndexRoute = IndexRouteImport.update({
 const ApiSendReportRoute = ApiSendReportRouteImport.update({
   id: '/api/send-report',
   path: '/api/send-report',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminPricesRoute = AdminPricesRouteImport.update({
+  id: '/admin/prices',
+  path: '/admin/prices',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminEmailsRoute = AdminEmailsRouteImport.update({
@@ -87,6 +93,7 @@ export interface FileRoutesByFullPath {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin/emails': typeof AdminEmailsRoute
+  '/admin/prices': typeof AdminPricesRoute
   '/api/send-report': typeof ApiSendReportRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -100,6 +107,7 @@ export interface FileRoutesByTo {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin/emails': typeof AdminEmailsRoute
+  '/admin/prices': typeof AdminPricesRoute
   '/api/send-report': typeof ApiSendReportRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -114,6 +122,7 @@ export interface FileRoutesById {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin/emails': typeof AdminEmailsRoute
+  '/admin/prices': typeof AdminPricesRoute
   '/api/send-report': typeof ApiSendReportRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -129,6 +138,7 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/admin/emails'
+    | '/admin/prices'
     | '/api/send-report'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -142,6 +152,7 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/admin/emails'
+    | '/admin/prices'
     | '/api/send-report'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -155,6 +166,7 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/admin/emails'
+    | '/admin/prices'
     | '/api/send-report'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -169,6 +181,7 @@ export interface RootRouteChildren {
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   AdminEmailsRoute: typeof AdminEmailsRoute
+  AdminPricesRoute: typeof AdminPricesRoute
   ApiSendReportRoute: typeof ApiSendReportRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -204,6 +217,13 @@ declare module '@tanstack/react-router' {
       path: '/api/send-report'
       fullPath: '/api/send-report'
       preLoaderRoute: typeof ApiSendReportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/prices': {
+      id: '/admin/prices'
+      path: '/admin/prices'
+      fullPath: '/admin/prices'
+      preLoaderRoute: typeof AdminPricesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/emails': {
@@ -266,6 +286,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   AdminEmailsRoute: AdminEmailsRoute,
+  AdminPricesRoute: AdminPricesRoute,
   ApiSendReportRoute: ApiSendReportRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
