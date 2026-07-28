@@ -55,19 +55,42 @@ export const generateAstroReport = createServerFn({ method: "POST" })
     const def = REPORTS.find((r) => r.id === data.reportId);
     if (!def) throw new Error(`Unknown report: ${data.reportId}`);
 
-    // Adult (18+) reports require a persisted server-side consent acknowledgment
-    // stored on the user's profile. Client-only confirms are bypassable.
-    if (def.adult) {
-      const { data: profile, error: profileError } = await context.supabase
-        .from("profiles")
-        .select("adult_consent")
-        .eq("id", context.userId)
+    // Admin bypass: admins may generate any report free of charge.
+    const { data: isAdmin } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+
+    if (!isAdmin) {
+      // Non-admins MUST have a paid purchase row for this reportId.
+      const { data: purchase, error: purchaseErr } = await context.supabase
+        .from("report_purchases")
+        .select("id, status")
+        .eq("user_id", context.userId)
+        .eq("report_id", data.reportId)
+        .eq("status", "paid")
+        .limit(1)
         .maybeSingle();
-      if (profileError) throw new Error(profileError.message);
-      if (!profile?.adult_consent) {
+      if (purchaseErr) throw new Error(purchaseErr.message);
+      if (!purchase) {
         throw new Error(
-          "ADULT_CONSENT_REQUIRED: You must record 18+ consent before generating intimacy reports.",
+          "PAYMENT_REQUIRED: Please purchase this report to unlock generation.",
         );
+      }
+
+      // Adult (18+) reports still require persisted server-side consent.
+      if (def.adult) {
+        const { data: profile, error: profileError } = await context.supabase
+          .from("profiles")
+          .select("adult_consent")
+          .eq("id", context.userId)
+          .maybeSingle();
+        if (profileError) throw new Error(profileError.message);
+        if (!profile?.adult_consent) {
+          throw new Error(
+            "ADULT_CONSENT_REQUIRED: You must record 18+ consent before generating intimacy reports.",
+          );
+        }
       }
     }
 
