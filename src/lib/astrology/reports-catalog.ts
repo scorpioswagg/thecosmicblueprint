@@ -3,7 +3,17 @@ export interface ReportDefinition {
   title: string;
   tagline: string;
   icon: string;
-  category: "Core" | "Relationships" | "Growth" | "Timing" | "Vocation" | "Esoteric" | "Intimacy (18+)" | "Patriotic Collection" | "Signature Series";
+  category: "Core" | "Relationships" | "Growth" | "Timing" | "Vocation" | "Esoteric" | "Intimacy (18+)" | "Patriotic Collection" | "Signature Series" | "Cosmic Frontier";
+  /** AI-assigned premium price in cents. Seeded into report_prices on migration. */
+  priceCents?: number;
+  /** Estimated PDF page count for store display. */
+  estimatedPages?: number;
+  /** Estimated reading time (minutes) for store display. */
+  readingMinutes?: number;
+  /** Difficulty / depth label for store display. */
+  difficulty?: "Introductory" | "Intermediate" | "Advanced" | "Masterwork";
+  /** Short "best for" audience line for store display. */
+  bestFor?: string;
   /** Marks reports with mature/explicit sexual content. UI should gate behind an 18+ confirmation. */
   adult?: boolean;
   /** Sections the LLM must produce, in order. */
