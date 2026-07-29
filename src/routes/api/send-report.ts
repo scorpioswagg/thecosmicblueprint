@@ -35,7 +35,7 @@ function isAllowedPdfUrl(raw: string): boolean {
   return false;
 }
 
-async function verifyBearer(request: Request): Promise<{ ok: true; userId: string } | { ok: false; status: number; message: string }> {
+async function verifyBearer(request: Request): Promise<{ ok: true; userId: string; email: string } | { ok: false; status: number; message: string }> {
   const auth = request.headers.get("authorization");
   if (!auth || !auth.startsWith("Bearer ")) {
     return { ok: false, status: 401, message: "Missing bearer token" };
@@ -51,7 +51,9 @@ async function verifyBearer(request: Request): Promise<{ ok: true; userId: strin
   if ((data.claims as { is_anonymous?: boolean }).is_anonymous) {
     return { ok: false, status: 403, message: "Anonymous users cannot send reports" };
   }
-  return { ok: true, userId: data.claims.sub as string };
+  const email = (data.claims as { email?: string }).email;
+  if (!email) return { ok: false, status: 403, message: "Authenticated user has no email on file" };
+  return { ok: true, userId: data.claims.sub as string, email };
 }
 
 function getAdminClient() {
