@@ -4,8 +4,7 @@ import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
 
 const BodySchema = z.object({
-  name: z.string().min(1).max(200),
-  email: z.string().email().max(320),
+  name: z.string().min(1).max(200).optional(),
   reportType: z.string().min(1).max(200),
   pdfUrl: z.string().url().optional(),
 });
@@ -36,7 +35,7 @@ function isAllowedPdfUrl(raw: string): boolean {
   return false;
 }
 
-async function verifyBearer(request: Request): Promise<{ ok: true; userId: string } | { ok: false; status: number; message: string }> {
+async function verifyBearer(request: Request): Promise<{ ok: true; userId: string; email: string } | { ok: false; status: number; message: string }> {
   const auth = request.headers.get("authorization");
   if (!auth || !auth.startsWith("Bearer ")) {
     return { ok: false, status: 401, message: "Missing bearer token" };
@@ -52,7 +51,9 @@ async function verifyBearer(request: Request): Promise<{ ok: true; userId: strin
   if ((data.claims as { is_anonymous?: boolean }).is_anonymous) {
     return { ok: false, status: 403, message: "Anonymous users cannot send reports" };
   }
-  return { ok: true, userId: data.claims.sub as string };
+  const email = (data.claims as { email?: string }).email;
+  if (!email) return { ok: false, status: 403, message: "Authenticated user has no email on file" };
+  return { ok: true, userId: data.claims.sub as string, email };
 }
 
 function getAdminClient() {
@@ -143,7 +144,8 @@ export const Route = createFileRoute("/api/send-report")({
               { status: 400 },
             );
           }
-          const { name, email, reportType, pdfUrl } = parsed.data;
+          const { name, reportType, pdfUrl } = parsed.data;
+          const email = authResult.email;
 
           if (pdfUrl && !isAllowedPdfUrl(pdfUrl)) {
             return Response.json(
@@ -152,14 +154,45 @@ export const Route = createFileRoute("/api/send-report")({
             );
           }
 
+          // Authorization: caller must either be an admin OR have a paid
+          // purchase for this reportType. Prevents using this endpoint as an
+          // email relay from the app's trusted sending domain.
+          const adminDb = getAdminClient();
+          if (!adminDb) {
+            return Response.json(
+              { success: false, error: "Server not configured" },
+              { status: 500 },
+            );
+          }
+          const { data: isAdmin } = await adminDb.rpc("has_role", {
+            _user_id: authResult.userId,
+            _role: "admin",
+          });
+          if (!isAdmin) {
+            const { data: purchase } = await adminDb
+              .from("report_purchases")
+              .select("id")
+              .eq("user_id", authResult.userId)
+              .eq("report_id", reportType)
+              .eq("status", "paid")
+              .limit(1)
+              .maybeSingle();
+            if (!purchase) {
+              return Response.json(
+                { success: false, error: "No paid purchase found for this report" },
+                { status: 403 },
+              );
+            }
+          }
+
           logId = await insertLog({
             template_name: reportType,
             recipient_email: email,
-            recipient_name: name,
+            recipient_name: name ?? null,
             status: "pending",
             attempts: 0,
             pdf_url: pdfUrl ?? null,
-            metadata: {},
+            metadata: { user_id: authResult.userId },
           });
 
           const attachments: { filename: string; content: string }[] = [];
@@ -201,7 +234,7 @@ export const Route = createFileRoute("/api/send-report")({
           const html = `
             <div style="font-family:Georgia,serif;color:#1a1a2e;max-width:600px;margin:0 auto;padding:32px;">
               <h1 style="color:#b8860b;font-size:24px;margin-bottom:16px;">Your Cosmic Blueprint Report</h1>
-              <p>Dear ${escapeHtml(name)},</p>
+              <p>Dear ${escapeHtml(name ?? "Cosmic Traveler")},</p>
               <p>Thank you for your purchase. Your <strong>${escapeHtml(reportType)}</strong> is ready.</p>
               ${pdfUrl ? `<p>Your report is attached to this email. You can also download it here: <a href="${escapeHtml(pdfUrl)}" style="color:#b8860b;">Download PDF</a></p>` : ""}
               <p style="margin-top:24px;">With gratitude,<br/>The Cosmic Blueprint Team</p>
