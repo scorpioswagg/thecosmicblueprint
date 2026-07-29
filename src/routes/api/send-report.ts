@@ -4,8 +4,7 @@ import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
 
 const BodySchema = z.object({
-  name: z.string().min(1).max(200),
-  email: z.string().email().max(320),
+  name: z.string().min(1).max(200).optional(),
   reportType: z.string().min(1).max(200),
   pdfUrl: z.string().url().optional(),
 });
