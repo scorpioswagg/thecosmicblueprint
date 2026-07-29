@@ -234,7 +234,7 @@ export const Route = createFileRoute("/api/send-report")({
           const html = `
             <div style="font-family:Georgia,serif;color:#1a1a2e;max-width:600px;margin:0 auto;padding:32px;">
               <h1 style="color:#b8860b;font-size:24px;margin-bottom:16px;">Your Cosmic Blueprint Report</h1>
-              <p>Dear ${escapeHtml(name)},</p>
+              <p>Dear ${escapeHtml(name ?? "Cosmic Traveler")},</p>
               <p>Thank you for your purchase. Your <strong>${escapeHtml(reportType)}</strong> is ready.</p>
               ${pdfUrl ? `<p>Your report is attached to this email. You can also download it here: <a href="${escapeHtml(pdfUrl)}" style="color:#b8860b;">Download PDF</a></p>` : ""}
               <p style="margin-top:24px;">With gratitude,<br/>The Cosmic Blueprint Team</p>
