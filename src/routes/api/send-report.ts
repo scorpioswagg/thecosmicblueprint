@@ -144,7 +144,8 @@ export const Route = createFileRoute("/api/send-report")({
               { status: 400 },
             );
           }
-          const { name, email, reportType, pdfUrl } = parsed.data;
+          const { name, reportType, pdfUrl } = parsed.data;
+          const email = authResult.email;
 
           if (pdfUrl && !isAllowedPdfUrl(pdfUrl)) {
             return Response.json(
@@ -153,14 +154,45 @@ export const Route = createFileRoute("/api/send-report")({
             );
           }
 
+          // Authorization: caller must either be an admin OR have a paid
+          // purchase for this reportType. Prevents using this endpoint as an
+          // email relay from the app's trusted sending domain.
+          const adminDb = getAdminClient();
+          if (!adminDb) {
+            return Response.json(
+              { success: false, error: "Server not configured" },
+              { status: 500 },
+            );
+          }
+          const { data: isAdmin } = await adminDb.rpc("has_role", {
+            _user_id: authResult.userId,
+            _role: "admin",
+          });
+          if (!isAdmin) {
+            const { data: purchase } = await adminDb
+              .from("report_purchases")
+              .select("id")
+              .eq("user_id", authResult.userId)
+              .eq("report_id", reportType)
+              .eq("status", "paid")
+              .limit(1)
+              .maybeSingle();
+            if (!purchase) {
+              return Response.json(
+                { success: false, error: "No paid purchase found for this report" },
+                { status: 403 },
+              );
+            }
+          }
+
           logId = await insertLog({
             template_name: reportType,
             recipient_email: email,
-            recipient_name: name,
+            recipient_name: name ?? null,
             status: "pending",
             attempts: 0,
             pdf_url: pdfUrl ?? null,
-            metadata: {},
+            metadata: { user_id: authResult.userId },
           });
 
           const attachments: { filename: string; content: string }[] = [];
