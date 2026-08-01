@@ -197,6 +197,96 @@ export type Database = {
         }
         Relationships: []
       }
+      report_catalog: {
+        Row: {
+          adult: boolean
+          category: string
+          cover_image_url: string | null
+          created_at: string
+          currency: string
+          description: string | null
+          estimated_delivery: string
+          features: string[]
+          icon: string | null
+          id: string
+          is_active: boolean
+          metadata: Json
+          price_cents: number
+          prompt_module: string | null
+          sale_price_cents: number | null
+          sections: string[]
+          seo_description: string | null
+          seo_keywords: string[]
+          seo_title: string | null
+          short_description: string | null
+          sort_order: number
+          stripe_price_id: string | null
+          stripe_product_id: string | null
+          system_framing: string | null
+          target_words: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          adult?: boolean
+          category?: string
+          cover_image_url?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          estimated_delivery?: string
+          features?: string[]
+          icon?: string | null
+          id: string
+          is_active?: boolean
+          metadata?: Json
+          price_cents?: number
+          prompt_module?: string | null
+          sale_price_cents?: number | null
+          sections?: string[]
+          seo_description?: string | null
+          seo_keywords?: string[]
+          seo_title?: string | null
+          short_description?: string | null
+          sort_order?: number
+          stripe_price_id?: string | null
+          stripe_product_id?: string | null
+          system_framing?: string | null
+          target_words?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          adult?: boolean
+          category?: string
+          cover_image_url?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          estimated_delivery?: string
+          features?: string[]
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          metadata?: Json
+          price_cents?: number
+          prompt_module?: string | null
+          sale_price_cents?: number | null
+          sections?: string[]
+          seo_description?: string | null
+          seo_keywords?: string[]
+          seo_title?: string | null
+          short_description?: string | null
+          sort_order?: number
+          stripe_price_id?: string | null
+          stripe_product_id?: string | null
+          system_framing?: string | null
+          target_words?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       report_prices: {
         Row: {
           created_at: string
