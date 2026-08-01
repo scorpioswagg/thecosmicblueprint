@@ -17,6 +17,7 @@ export function BirthForm({ onSubmit, busy, canAutofill = false }: Props) {
   const [hour, setHour] = useState("");
   const [minute, setMinute] = useState("");
   const [meridiem, setMeridiem] = useState<"AM" | "PM">("AM");
+  const [timeUnknown, setTimeUnknown] = useState(false);
   const [place, setPlace] = useState("");
   const [results, setResults] = useState<GeocodeResult[]>([]);
   const [picked, setPicked] = useState<GeocodeResult | null>(null);
