@@ -70,11 +70,18 @@ export function BirthForm({ onSubmit, busy, canAutofill = false }: Props) {
     if (!mN || mN < 1 || mN > 12) { setError("Month must be between 1 and 12."); return; }
     if (!dN || dN < 1 || dN > 31) { setError("Day must be between 1 and 31."); return; }
     if (!yN || yN < 1800 || yN > 2400) { setError("Year must be between 1800 and 2400."); return; }
-    if (isNaN(hN) || hN < 1 || hN > 12) { setError("Hour must be between 1 and 12."); return; }
-    if (isNaN(minN) || minN < 0 || minN > 59) { setError("Minutes must be between 0 and 59."); return; }
+    if (!timeUnknown) {
+      if (isNaN(hN) || hN < 1 || hN > 12) { setError("Hour must be between 1 and 12."); return; }
+      if (isNaN(minN) || minN < 0 || minN > 59) { setError("Minutes must be between 0 and 59."); return; }
+    }
     const date = `${yN}-${String(mN).padStart(2, "0")}-${String(dN).padStart(2, "0")}`;
     const h24 = meridiem === "PM" ? (hN % 12) + 12 : hN % 12;
-    const time = `${String(h24).padStart(2, "0")}:${String(minN).padStart(2, "0")}`;
+    // When the birth time is unknown we anchor the calculation to local noon so
+    // sign positions are as representative as possible. Angles and houses are
+    // suppressed everywhere downstream.
+    const time = timeUnknown
+      ? "12:00"
+      : `${String(h24).padStart(2, "0")}:${String(minN).padStart(2, "0")}`;
     if (!picked) {
       setError("Search and select a birth location.");
       return;
@@ -91,6 +98,7 @@ export function BirthForm({ onSubmit, busy, canAutofill = false }: Props) {
         longitude: picked.longitude,
         timezone: tz,
         tzOffsetHours: offset,
+        timeUnknown,
       };
       onSubmit(input);
     } catch (e) {
