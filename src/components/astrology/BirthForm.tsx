@@ -143,19 +143,40 @@ export function BirthForm({ onSubmit, busy, canAutofill = false }: Props) {
         </div>
       </Field>
 
-      <Field label="Birth Time (Hour / Minute / AM-PM)">
-        <div className="grid grid-cols-[1fr_1fr_1.2fr] gap-2">
-          <input value={hour} onChange={(e) => setHour(e.target.value.replace(/\D/g, "").slice(0, 2))}
-            inputMode="numeric" placeholder="HH" maxLength={2} className="cosmic-input text-center" />
-          <input value={minute} onChange={(e) => setMinute(e.target.value.replace(/\D/g, "").slice(0, 2))}
-            inputMode="numeric" placeholder="MM" maxLength={2} className="cosmic-input text-center" />
-          <select value={meridiem} onChange={(e) => setMeridiem(e.target.value as "AM" | "PM")}
-            className="cosmic-input text-center">
-            <option value="AM">AM</option>
-            <option value="PM">PM</option>
-          </select>
-        </div>
-      </Field>
+      {!timeUnknown && (
+        <Field label="Birth Time (Hour / Minute / AM-PM)">
+          <div className="grid grid-cols-[1fr_1fr_1.2fr] gap-2">
+            <input value={hour} onChange={(e) => setHour(e.target.value.replace(/\D/g, "").slice(0, 2))}
+              inputMode="numeric" placeholder="HH" maxLength={2} className="cosmic-input text-center" />
+            <input value={minute} onChange={(e) => setMinute(e.target.value.replace(/\D/g, "").slice(0, 2))}
+              inputMode="numeric" placeholder="MM" maxLength={2} className="cosmic-input text-center" />
+            <select value={meridiem} onChange={(e) => setMeridiem(e.target.value as "AM" | "PM")}
+              className="cosmic-input text-center">
+              <option value="AM">AM</option>
+              <option value="PM">PM</option>
+            </select>
+          </div>
+        </Field>
+      )}
+
+      <label className="flex items-start gap-3 rounded-xl border border-gold/20 bg-card/40 p-3 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={timeUnknown}
+          onChange={(e) => setTimeUnknown(e.target.checked)}
+          className="mt-0.5 h-4 w-4 accent-[var(--gold)]"
+        />
+        <span className="text-sm text-foreground">I don&apos;t know my birth time</span>
+      </label>
+
+      {timeUnknown && (
+        <p className="rounded-xl border border-gold/25 bg-gold/5 p-4 text-xs leading-relaxed text-muted-foreground">
+          Don&apos;t know your birth time? That&apos;s perfectly okay. We can still create a detailed,
+          personalized Cosmic Blueprint report using the birth information you do know. Your report will
+          go deeper into planetary signs, aspects, archetypes and life themes instead of houses — and it
+          will never guess your Rising Sign, Midheaven or house placements.
+        </p>
+      )}
 
       <Field label="Birthplace">
         <div className="flex gap-2">
