@@ -4,11 +4,13 @@ import ReactMarkdown from "react-markdown";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import type { ChartCalculation } from "@/lib/astrology/types";
-import { REPORTS } from "@/lib/astrology/reports-catalog";
+import { useCatalog } from "@/hooks/useCatalog";
+import type { CatalogEntry } from "@/lib/astrology/catalog";
+import { PdfPreviewModal } from "@/components/astrology/PdfPreviewModal";
 import { generateAstroReport } from "@/lib/astrology/generate-report.functions";
 import { acknowledgeAdultConsent } from "@/lib/astrology/adult-consent.functions";
 import { supabase } from "@/integrations/supabase/client";
-import { downloadLuxuryReportPdf } from "@/lib/astrology/luxury-pdf";
+import { downloadLuxuryReportPdf, buildLuxuryReportPdfBytes } from "@/lib/astrology/luxury-pdf";
 import { jsPDF } from "jspdf";
 
 interface GeneratedReport {
@@ -19,6 +21,8 @@ interface GeneratedReport {
 }
 
 export function ReportsPanel({ chart }: { chart: ChartCalculation }) {
+  const { catalog: REPORTS } = useCatalog();
+  const [preview, setPreview] = useState<{ title: string; fileName: string; bytes: Uint8Array; report: GeneratedReport } | null>(null);
   const runReport = useServerFn(generateAstroReport);
   const runAckAdult = useServerFn(acknowledgeAdultConsent);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -67,6 +71,7 @@ export function ReportsPanel({ chart }: { chart: ChartCalculation }) {
           latitude: chart.input.latitude,
           longitude: chart.input.longitude,
           timezone: chart.input.timezone,
+          timeUnknown: chart.input.timeUnknown ?? false,
         },
         julianDayUT: chart.julianDayUT,
         utcIso: chart.utcIso,
@@ -98,7 +103,7 @@ export function ReportsPanel({ chart }: { chart: ChartCalculation }) {
     }
   }
 
-  const grouped = REPORTS.reduce<Record<string, typeof REPORTS>>((acc, r) => {
+  const grouped = REPORTS.reduce<Record<string, CatalogEntry[]>>((acc, r) => {
     (acc[r.category] ||= []).push(r);
     return acc;
   }, {});
@@ -117,6 +122,13 @@ export function ReportsPanel({ chart }: { chart: ChartCalculation }) {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  }
+
+  function openPreview(r: GeneratedReport) {
+    const safe = r.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+    const fileName = `${safe}-${chart.input.name.replace(/\s+/g, "-")}.pdf`;
+    const bytes = buildLuxuryReportPdfBytes(r, chart);
+    setPreview({ title: r.title, fileName, bytes, report: r });
   }
 
   function downloadReportPdf(r: GeneratedReport) {
@@ -200,6 +212,7 @@ export function ReportsPanel({ chart }: { chart: ChartCalculation }) {
           name: chart.input.name, date: chart.input.date, time: chart.input.time,
           place: chart.input.place, latitude: chart.input.latitude,
           longitude: chart.input.longitude, timezone: chart.input.timezone,
+          timeUnknown: chart.input.timeUnknown ?? false,
         },
         julianDayUT: chart.julianDayUT, utcIso: chart.utcIso,
         ascendant: chart.ascendant, midheaven: chart.midheaven,
@@ -265,7 +278,7 @@ export function ReportsPanel({ chart }: { chart: ChartCalculation }) {
 
   async function bulkGeneratePdfs(
     label: string,
-    defs: typeof REPORTS,
+    defs: CatalogEntry[],
   ) {
     if (defs.length === 0) return;
     if (isBulkRunning) return;
@@ -414,7 +427,13 @@ export function ReportsPanel({ chart }: { chart: ChartCalculation }) {
                     <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">{r.tagline}</p>
                   </button>
                   {isDone && (
-                    <div className="mt-3 grid grid-cols-2 gap-2">
+                    <div className="mt-3 grid grid-cols-3 gap-2">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); openPreview(reports[r.id]); }}
+                        className="text-[11px] uppercase tracking-widest text-gold border border-gold/40 rounded-md py-1.5 hover:bg-gold/10 transition"
+                      >
+                        ◱ Preview
+                      </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); downloadReport(reports[r.id]); }}
                         className="text-[11px] uppercase tracking-widest text-gold border border-gold/40 rounded-md py-1.5 hover:bg-gold/10 transition"
@@ -572,6 +591,15 @@ export function ReportsPanel({ chart }: { chart: ChartCalculation }) {
           font-style: italic;
         }
       `}</style>
+          <PdfPreviewModal
+        open={!!preview}
+        title={preview?.title ?? ""}
+        fileName={preview?.fileName ?? ""}
+        bytes={preview?.bytes ?? null}
+        onClose={() => setPreview(null)}
+        onDownload={() => { if (preview) downloadReportPdf(preview.report); }}
+      />
+
     </section>
   );
 }
