@@ -3,6 +3,7 @@ import { BODY_GLYPHS, ZODIAC_GLYPHS } from "@/lib/astrology/types";
 import { formatDegree } from "@/lib/astrology/zodiac";
 
 export function PlacementsTable({ chart }: { chart: ChartCalculation }) {
+  const timeUnknown = chart.input.timeUnknown === true;
   return (
     <div className="glass rounded-2xl p-6 shadow-deep overflow-x-auto">
       <h3 className="font-display text-xl text-gradient-gold mb-4">Planetary Placements</h3>
@@ -12,7 +13,7 @@ export function PlacementsTable({ chart }: { chart: ChartCalculation }) {
             <th className="text-left py-2">Body</th>
             <th className="text-left">Sign</th>
             <th className="text-left">Degree</th>
-            <th className="text-left">House</th>
+            {!timeUnknown && <th className="text-left">House</th>}
             <th className="text-left">Motion</th>
           </tr>
         </thead>
@@ -26,7 +27,7 @@ export function PlacementsTable({ chart }: { chart: ChartCalculation }) {
                 <span className="text-gold mr-1.5">{ZODIAC_GLYPHS[b.sign]}</span>{b.sign}
               </td>
               <td className="font-mono text-xs">{formatDegree(b.signDegree)}</td>
-              <td className="text-muted-foreground">{b.house ?? "—"}</td>
+              {!timeUnknown && <td className="text-muted-foreground">{b.house ?? "—"}</td>}
               <td className="text-xs">
                 {b.retrograde
                   ? <span className="text-destructive">℞ retrograde</span>
@@ -36,6 +37,12 @@ export function PlacementsTable({ chart }: { chart: ChartCalculation }) {
           ))}
         </tbody>
       </table>
+      {timeUnknown && (
+        <p className="mt-4 text-xs text-muted-foreground">
+          Birth time unknown — houses, Rising Sign and Midheaven are omitted because they cannot be
+          calculated accurately. Planetary signs and aspects below are still precise.
+        </p>
+      )}
     </div>
   );
 }
