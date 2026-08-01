@@ -34,8 +34,12 @@ export function ChartWheel({ chart, size = 560 }: Props) {
   const rPlanet = size * 0.345;
   const rAspectInner = size * 0.295;
 
+  // When the birth time is unknown, angles and houses are not meaningful:
+  // orient the wheel to 0° Aries and suppress cusps / ASC / MC markers.
+  const timeUnknown = chart.input.timeUnknown === true;
+
   // Rotation so that the Ascendant sits on the left horizon (9 o'clock).
-  const asc = chart.ascendant;
+  const asc = timeUnknown ? 0 : chart.ascendant;
   const toAngle = (lon: number) => normalizeDeg(180 - (lon - asc));
   const polar = (angleDeg: number, r: number) => {
     const a = (angleDeg * Math.PI) / 180;
@@ -90,7 +94,7 @@ export function ChartWheel({ chart, size = 560 }: Props) {
       })}
 
       {/* House cusps */}
-      {chart.houses.map((cusp, i) => {
+      {(timeUnknown ? [] : chart.houses).map((cusp, i) => {
         const a = toAngle(cusp);
         const [x1, y1] = polar(a, rZodiacInner);
         const [x2, y2] = polar(a, rHouseInner);
@@ -148,7 +152,7 @@ export function ChartWheel({ chart, size = 560 }: Props) {
       })}
 
       {/* ASC / MC markers */}
-      {(["Ascendant","Midheaven"] as BodyName[]).map((n) => {
+      {(timeUnknown ? [] : (["Ascendant","Midheaven"] as BodyName[])).map((n) => {
         const b = chart.bodies.find((x) => x.name === n);
         if (!b) return null;
         const a = toAngle(b.longitude);
