@@ -69,12 +69,14 @@ export interface Aspect {
 export interface BirthInput {
   name: string;
   date: string;            // YYYY-MM-DD (local civil date)
-  time: string;            // HH:MM (24h local)
+  time: string;            // HH:MM (24h local); "12:00" placeholder when unknown
   place: string;
   latitude: number;
   longitude: number;
   timezone: string;        // IANA tz
   tzOffsetHours: number;   // resolved offset for that date (with DST)
+  /** True when the client does not know their birth time. Suppresses angles/houses. */
+  timeUnknown?: boolean;
 }
 
 export interface ChartCalculation {

@@ -34,6 +34,7 @@ const InputSchema = z.object({
       latitude: z.number(),
       longitude: z.number(),
       timezone: z.string(),
+      timeUnknown: z.boolean().optional(),
     }),
     julianDayUT: z.number(),
     utcIso: z.string(),
