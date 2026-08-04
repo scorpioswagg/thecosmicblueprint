@@ -109,6 +109,45 @@ export const Route = createFileRoute("/api/webhooks/stripe")({
           })();
         }
 
+        if (event.type === "charge.refunded" || event.type === "refund.created") {
+          const obj = event.data.object as Stripe.Charge | Stripe.Refund;
+          const paymentIntentId =
+            typeof obj.payment_intent === "string" ? obj.payment_intent : obj.payment_intent?.id;
+          if (paymentIntentId) {
+            const db = await adminClient();
+            const { data: purchase } = await (db as any)
+              .from("report_purchases")
+              .select("id, user_id, report_id, amount_cents, currency, status")
+              .eq("stripe_payment_intent_id", paymentIntentId)
+              .maybeSingle();
+
+            if (purchase && purchase.status !== "refunded") {
+              await (db as any)
+                .from("report_purchases")
+                .update({ status: "refunded" })
+                .eq("id", purchase.id);
+
+              try {
+                const { data: userRes } = await db.auth.admin.getUserById(purchase.user_id);
+                const email = userRes?.user?.email;
+                if (email) {
+                  const { sendRefundEmail } = await import("@/lib/email/service.server");
+                  await sendRefundEmail({
+                    to: email,
+                    name: (userRes?.user?.user_metadata as { full_name?: string } | undefined)
+                      ?.full_name,
+                    reportTitle: purchase.report_id,
+                    amountFormatted: `$${(purchase.amount_cents / 100).toFixed(2)} ${purchase.currency}`,
+                    orderId: paymentIntentId,
+                  });
+                }
+              } catch (e) {
+                console.error("[stripe-webhook] refund email failed", e);
+              }
+            }
+          }
+        }
+
         return Response.json({ ok: true, type: event.type });
       },
     },
