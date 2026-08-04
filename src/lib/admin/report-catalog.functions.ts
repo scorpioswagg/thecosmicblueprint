@@ -12,6 +12,9 @@ async function assertAdmin(supabase: any, userId: string) {
   if (!isAdmin) throw new Error("Forbidden");
 }
 
+/** Catalog row as sent to the admin client (metadata omitted — not serializable). */
+export type AdminCatalogRow = Omit<CatalogRow, "metadata">;
+
 export const listCatalogRows = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -22,7 +25,7 @@ export const listCatalogRows = createServerFn({ method: "GET" })
       .select(CATALOG_SELECT)
       .order("sort_order", { ascending: true });
     if (error) throw new Error(error.message);
-    return (data ?? []) as unknown as CatalogRow[];
+    return ((data ?? []) as unknown as CatalogRow[]).map(({ metadata: _m, ...rest }) => rest);
   });
 
 const CatalogSchema = z.object({
