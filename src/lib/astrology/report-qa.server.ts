@@ -290,49 +290,166 @@ export async function runReportQa(opts: RunQaOptions): Promise<QaResult> {
 
   // -- structural validation -------------------------------------------------
   const required = Array.from(new Set([...opts.requiredSections, ...REQUIRED_UNIVERSAL]));
-  let missing = findMissingSections(text, required);
-  const placeholders = findPlaceholders(text);
-  let violations = opts.timeUnknown ? findUnknownTimeViolations(text) : [];
 
-  if (missing.length || placeholders.length || violations.length) {
-    const instruction = [
-      missing.length
-        ? `Add the missing chapters as new "## " sections, in the correct order, with the same depth and voice as the rest: ${missing.join(", ")}.`
-        : "",
-      placeholders.length
-        ? `Remove all placeholder artefacts (${placeholders.join(", ")}) and replace them with real, personalised prose.`
-        : "",
-      violations.length
-        ? "The birth time is UNKNOWN. Remove every reference to the Rising Sign, Ascendant, Midheaven, house placements, and house rulers, and replace that material with deeper sign, aspect, and psychological interpretation."
-        : "",
-      "Return the complete corrected report in Markdown. Do not shorten existing chapters.",
-    ]
-      .filter(Boolean)
-      .join("\n");
-
-    text = normaliseBrand(await opts.revise(instruction, text)).text;
-    text = repairTypography(text).text;
-
-    missing = findMissingSections(text, required);
-    violations = opts.timeUnknown ? findUnknownTimeViolations(text) : [];
-    if (missing.length) {
-      issues.push({ stage: "sections", severity: "warning", message: `Still light on: ${missing.join(", ")}` });
-    } else {
-      issues.push({ stage: "sections", severity: "fixed", message: "Regenerated missing sections." });
-    }
-    if (violations.length) {
+  // 4a. De-duplicate chapters deterministically (no AI call needed).
+  {
+    const split = splitChapters(text);
+    const { chapters, removed } = dedupeChapters(split.chapters);
+    if (removed.length) {
+      text = joinChapters(split.preamble, chapters);
       issues.push({
-        stage: "astrology",
-        severity: "blocking",
-        message: "Report still references time-sensitive factors despite an unknown birth time.",
+        stage: "chapters",
+        severity: "fixed",
+        message: `Merged duplicated chapters: ${Array.from(new Set(removed)).join(", ")}`,
       });
     }
+  }
+
+  // 4b. Regenerate ONLY the missing chapters, one at a time.
+  let missing = findMissingSections(text, required);
+  if (missing.length) {
+    const regenerated: string[] = [];
+    for (const section of missing) {
+      const split = splitChapters(text);
+      const context = split.chapters
+        .map((c) => `## ${c.heading}\n${c.body.slice(0, 400)}`)
+        .join("\n\n")
+        .slice(0, 12000);
+
+      const instruction =
+        `The report is missing one chapter: "${section}".\n` +
+        `Write ONLY that chapter — start with the exact line "## ${section}" and nothing before it. ` +
+        "Match the depth, voice, and chart-evidence style of the existing chapters, and do not repeat their material. " +
+        (opts.timeUnknown
+          ? "The birth time is UNKNOWN: never mention the Rising Sign, Ascendant, Midheaven, houses, or house rulers. "
+          : "") +
+        "Do not return any other chapter or any commentary.";
+
+      let produced = "";
+      try {
+        produced = repairTypography(normaliseBrand(await opts.revise(instruction, context)).text).text;
+      } catch (e) {
+        issues.push({
+          stage: "sections",
+          severity: "warning",
+          message: `Could not regenerate "${section}" (${(e as Error).message}).`,
+        });
+        continue;
+      }
+
+      const newChapters = splitChapters(produced).chapters;
+      const chapter = newChapters[0] ?? { heading: section, body: produced.trim() };
+      if (!chapter.body.trim()) continue;
+
+      text = joinChapters(
+        split.preamble,
+        dedupeChapters(insertChapterInOrder(split.chapters, chapter, required)).chapters,
+      );
+      regenerated.push(section);
+    }
+
+    if (regenerated.length) {
+      issues.push({
+        stage: "sections",
+        severity: "fixed",
+        message: `Regenerated missing chapters: ${regenerated.join(", ")}`,
+      });
+    }
+    missing = findMissingSections(text, required);
+    if (missing.length) {
+      issues.push({ stage: "sections", severity: "warning", message: `Still light on: ${missing.join(", ")}` });
+    }
+  }
+
+  // 4c. Placeholders — repair only the affected chapters.
+  const placeholders = findPlaceholders(text);
+  if (placeholders.length) {
+    const split = splitChapters(text);
+    const fixedChapters: Chapter[] = [];
+    for (const c of split.chapters) {
+      if (!findPlaceholders(`## ${c.heading}\n${c.body}`).length) {
+        fixedChapters.push(c);
+        continue;
+      }
+      try {
+        const out = await opts.revise(
+          `Rewrite this single chapter, removing every placeholder artefact (${placeholders.join(", ")}) and replacing it with real, personalised prose. ` +
+            `Keep the heading "## ${c.heading}" and the same length. Return only this chapter in Markdown.`,
+          `## ${c.heading}\n\n${c.body}`,
+        );
+        const rebuilt = splitChapters(repairTypography(normaliseBrand(out).text).text).chapters[0];
+        fixedChapters.push(rebuilt ?? c);
+      } catch {
+        fixedChapters.push(c);
+      }
+    }
+    text = joinChapters(split.preamble, fixedChapters);
+    const stillPlaceholders = findPlaceholders(text);
+    issues.push({
+      stage: "placeholder",
+      severity: stillPlaceholders.length ? "blocking" : "fixed",
+      message: stillPlaceholders.length
+        ? `Placeholder artefacts remain: ${stillPlaceholders.join(", ")}`
+        : "Removed placeholder artefacts.",
+    });
+  }
+
+  // 4d. Unknown birth time — scrub only the offending chapters, then hard-enforce.
+  if (opts.timeUnknown && findUnknownTimeViolations(text).length) {
+    const split = splitChapters(text);
+    const scrubbed: Chapter[] = [];
+    for (const c of split.chapters) {
+      if (!findUnknownTimeViolations(`${c.heading}\n${c.body}`).length) {
+        scrubbed.push(c);
+        continue;
+      }
+      try {
+        const out = await opts.revise(
+          "The birth time for this chart is UNKNOWN. Rewrite this single chapter so it contains NO reference to the Rising Sign, Ascendant, Midheaven, MC, house placements, or house rulers. " +
+            "Replace that material with deeper sign, aspect, dignity, and psychological interpretation at the same length. " +
+            `Keep the heading "## ${c.heading}". Return only this chapter in Markdown.`,
+          `## ${c.heading}\n\n${c.body}`,
+        );
+        const rebuilt = splitChapters(repairTypography(normaliseBrand(out).text).text).chapters[0];
+        scrubbed.push(rebuilt ?? c);
+      } catch {
+        scrubbed.push(c);
+      }
+    }
+    text = joinChapters(split.preamble, scrubbed);
+
+    const remaining = findUnknownTimeViolations(text);
+    if (remaining.length) {
+      // Deterministic last resort: drop the sentences that still violate the rule.
+      text = text
+        .split("\n")
+        .map((line) =>
+          /^#{1,6}\s/.test(line)
+            ? line
+            : line
+                .split(/(?<=[.!?])\s+/)
+                .filter((s) => !findUnknownTimeViolations(s).length)
+                .join(" "),
+        )
+        .join("\n");
+      text = repairTypography(text).text;
+    }
+
+    const finalViolations = findUnknownTimeViolations(text);
+    issues.push({
+      stage: "astrology",
+      severity: finalViolations.length ? "blocking" : "fixed",
+      message: finalViolations.length
+        ? "Report still references time-sensitive factors despite an unknown birth time."
+        : "Removed all time-sensitive (Ascendant/MC/house) content for the unknown birth time.",
+    });
   }
 
   const dupes = findDuplicateHeadings(listHeadings(text));
   if (dupes.length) {
     issues.push({ stage: "chapters", severity: "warning", message: `Duplicate chapters: ${dupes.join(", ")}` });
   }
+
 
   // -- AI readability review -------------------------------------------------
   let score = 100;
