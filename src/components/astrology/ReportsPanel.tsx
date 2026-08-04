@@ -8,6 +8,7 @@ import { useCatalog } from "@/hooks/useCatalog";
 import type { CatalogEntry } from "@/lib/astrology/catalog";
 import { PdfPreviewModal } from "@/components/astrology/PdfPreviewModal";
 import { generateAstroReport } from "@/lib/astrology/generate-report.functions";
+import { notifyReportStarted, notifyReportReady } from "@/lib/email/lifecycle.functions";
 import { acknowledgeAdultConsent } from "@/lib/astrology/adult-consent.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { downloadLuxuryReportPdf, buildLuxuryReportPdfBytes } from "@/lib/astrology/luxury-pdf";
