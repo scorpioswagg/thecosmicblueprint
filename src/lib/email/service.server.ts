@@ -118,6 +118,10 @@ interface SendArgs {
   metadata?: Record<string, unknown>;
 }
 
+const MAX_ATTEMPTS = 3;
+const RETRY_BASE_MS = 500;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 async function sendResendEmail(args: SendArgs): Promise<EmailResult> {
   const apiKey = process.env.RESEND_API_KEY;
   const logId = await insertLog({
@@ -133,22 +137,42 @@ async function sendResendEmail(args: SendArgs): Promise<EmailResult> {
     return { ok: false, error: "RESEND_API_KEY missing", logId };
   }
   const resend = new Resend(apiKey);
-  try {
-    const { data, error } = await resend.emails.send({
-      from: fromAddress(),
-      to: [args.to],
-      subject: args.subject,
-      html: args.html,
-    });
-    if (error) throw new Error(error.message ?? "Resend error");
-    await updateLog(logId, { status: "sent", attempts: 1, resend_id: data?.id ?? null });
-    return { ok: true, id: data?.id, logId };
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    await updateLog(logId, { status: "failed", attempts: 1, error_message: msg });
-    console.error(`[emailService] ${args.templateName} send failed`, err);
-    return { ok: false, error: msg, logId };
+  let lastError = "Unknown error";
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      const { data, error } = await resend.emails.send({
+        from: fromAddress(),
+        to: [args.to],
+        subject: args.subject,
+        html: args.html,
+      });
+      if (error) throw new Error(error.message ?? "Resend error");
+      await updateLog(logId, { status: "sent", attempts: attempt, resend_id: data?.id ?? null });
+      return { ok: true, id: data?.id, logId };
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : String(err);
+      console.warn(`[emailService] ${args.templateName} attempt ${attempt} failed: ${lastError}`);
+      if (attempt < MAX_ATTEMPTS) await sleep(RETRY_BASE_MS * 2 ** (attempt - 1));
+    }
   }
+  await updateLog(logId, { status: "failed", attempts: MAX_ATTEMPTS, error_message: lastError });
+  console.error(`[emailService] ${args.templateName} send failed after retries`, lastError);
+  return { ok: false, error: lastError, logId };
+}
+
+/** Returns true when a successful/pending send for this template+recipient already exists. */
+export async function alreadySent(templateName: string, to: string): Promise<boolean> {
+  const db = adminClient();
+  if (!db) return false;
+  const { data } = await db
+    .from("email_send_log")
+    .select("id")
+    .eq("template_name", templateName)
+    .eq("recipient_email", to)
+    .in("status", ["pending", "sent", "delivered", "opened", "clicked"])
+    .limit(1)
+    .maybeSingle();
+  return Boolean(data);
 }
 
 // -------------------- Individual templates --------------------
