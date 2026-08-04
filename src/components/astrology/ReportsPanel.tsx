@@ -91,8 +91,12 @@ export function ReportsPanel({ chart }: { chart: ChartCalculation }) {
           a: a.a, b: a.b, type: a.type, angle: a.angle, orb: a.orb, applying: a.applying,
         })),
       };
+      void notifyStarted({ data: { reportTitle: def?.title ?? reportId } }).catch(() => {});
       const result = await runReport({ data: { reportId, chart: chartPayload } });
       setReports((prev) => ({ ...prev, [reportId]: result }));
+      void notifyReady({ data: { reportTitle: result.title ?? def?.title ?? reportId } }).catch(
+        () => {},
+      );
       requestAnimationFrame(() => {
         document.getElementById(`report-${reportId}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
       });
