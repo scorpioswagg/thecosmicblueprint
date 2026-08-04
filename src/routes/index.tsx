@@ -54,6 +54,8 @@ function Index() {
           // ignore
         }
       }
+      // Fire the welcome lifecycle email (server-side deduped per address).
+      void sendWelcomeLifecycleEmail({}).catch(() => {});
       // Check welcome flag
       const { data: prof } = await supabase
         .from("profiles")
