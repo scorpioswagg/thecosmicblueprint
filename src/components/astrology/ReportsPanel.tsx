@@ -24,6 +24,8 @@ export function ReportsPanel({ chart }: { chart: ChartCalculation }) {
   const { catalog: REPORTS } = useCatalog();
   const [preview, setPreview] = useState<{ title: string; fileName: string; bytes: Uint8Array; report: GeneratedReport } | null>(null);
   const runReport = useServerFn(generateAstroReport);
+  const notifyStarted = useServerFn(notifyReportStarted);
+  const notifyReady = useServerFn(notifyReportReady);
   const runAckAdult = useServerFn(acknowledgeAdultConsent);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
