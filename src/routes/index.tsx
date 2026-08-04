@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { WelcomeModal } from "@/components/WelcomeModal";
 import type { BirthInput, ChartCalculation } from "@/lib/astrology/types";
+import { sendWelcomeLifecycleEmail } from "@/lib/email/lifecycle.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -54,6 +55,8 @@ function Index() {
           // ignore
         }
       }
+      // Fire the welcome lifecycle email (server-side deduped per address).
+      void sendWelcomeLifecycleEmail({}).catch(() => {});
       // Check welcome flag
       const { data: prof } = await supabase
         .from("profiles")

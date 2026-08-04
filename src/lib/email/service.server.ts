@@ -118,6 +118,10 @@ interface SendArgs {
   metadata?: Record<string, unknown>;
 }
 
+const MAX_ATTEMPTS = 3;
+const RETRY_BASE_MS = 500;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 async function sendResendEmail(args: SendArgs): Promise<EmailResult> {
   const apiKey = process.env.RESEND_API_KEY;
   const logId = await insertLog({
@@ -133,22 +137,42 @@ async function sendResendEmail(args: SendArgs): Promise<EmailResult> {
     return { ok: false, error: "RESEND_API_KEY missing", logId };
   }
   const resend = new Resend(apiKey);
-  try {
-    const { data, error } = await resend.emails.send({
-      from: fromAddress(),
-      to: [args.to],
-      subject: args.subject,
-      html: args.html,
-    });
-    if (error) throw new Error(error.message ?? "Resend error");
-    await updateLog(logId, { status: "sent", attempts: 1, resend_id: data?.id ?? null });
-    return { ok: true, id: data?.id, logId };
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    await updateLog(logId, { status: "failed", attempts: 1, error_message: msg });
-    console.error(`[emailService] ${args.templateName} send failed`, err);
-    return { ok: false, error: msg, logId };
+  let lastError = "Unknown error";
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      const { data, error } = await resend.emails.send({
+        from: fromAddress(),
+        to: [args.to],
+        subject: args.subject,
+        html: args.html,
+      });
+      if (error) throw new Error(error.message ?? "Resend error");
+      await updateLog(logId, { status: "sent", attempts: attempt, resend_id: data?.id ?? null });
+      return { ok: true, id: data?.id, logId };
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : String(err);
+      console.warn(`[emailService] ${args.templateName} attempt ${attempt} failed: ${lastError}`);
+      if (attempt < MAX_ATTEMPTS) await sleep(RETRY_BASE_MS * 2 ** (attempt - 1));
+    }
   }
+  await updateLog(logId, { status: "failed", attempts: MAX_ATTEMPTS, error_message: lastError });
+  console.error(`[emailService] ${args.templateName} send failed after retries`, lastError);
+  return { ok: false, error: lastError, logId };
+}
+
+/** Returns true when a successful/pending send for this template+recipient already exists. */
+export async function alreadySent(templateName: string, to: string): Promise<boolean> {
+  const db = adminClient();
+  if (!db) return false;
+  const { data } = await db
+    .from("email_send_log")
+    .select("id")
+    .eq("template_name", templateName)
+    .eq("recipient_email", to)
+    .in("status", ["pending", "sent", "delivered", "opened", "clicked"])
+    .limit(1)
+    .maybeSingle();
+  return Boolean(data);
 }
 
 // -------------------- Individual templates --------------------
@@ -333,5 +357,94 @@ export function sendNewsletterEmail(args: {
     toName: args.name,
     subject: args.subject,
     html,
+  });
+}
+// -------------------- Lifecycle additions --------------------
+
+export function sendReportStartedEmail(args: { to: string; name?: string; reportTitle: string }) {
+  const html = wrapBrandedHtml({
+    heading: "Your report is being written",
+    body: `<p>Dear ${escapeHtml(args.name?.trim() || "friend")},</p>
+           <p>Our engine has begun composing your <strong style="color:${BRAND.gold};">${escapeHtml(args.reportTitle)}</strong>, chapter by chapter, from your exact natal placements.</p>
+           <p style="color:${BRAND.muted};font-size:13px;">You&#39;ll receive another email the moment it&#39;s ready to download.</p>`,
+  });
+  return sendResendEmail({
+    templateName: "report_started",
+    to: args.to,
+    toName: args.name,
+    subject: `We&#39;ve started your ${args.reportTitle}`,
+    html,
+    metadata: { reportTitle: args.reportTitle },
+  });
+}
+
+export function sendReportDeliveredEmail(args: {
+  to: string;
+  name?: string;
+  reportTitle: string;
+  downloadUrl?: string;
+}) {
+  const html = wrapBrandedHtml({
+    heading: "Your report has been delivered",
+    body: `<p>Dear ${escapeHtml(args.name?.trim() || "friend")},</p>
+           <p>Your <strong style="color:${BRAND.gold};">${escapeHtml(args.reportTitle)}</strong> PDF has been delivered to this address.</p>
+           <p style="color:${BRAND.muted};font-size:13px;">Keep this email — it&#39;s your permanent record of delivery.</p>`,
+    ctaLabel: args.downloadUrl ? "Open my report" : undefined,
+    ctaHref: args.downloadUrl,
+  });
+  return sendResendEmail({
+    templateName: "report_delivered",
+    to: args.to,
+    toName: args.name,
+    subject: `Delivered: ${args.reportTitle}`,
+    html,
+    metadata: { reportTitle: args.reportTitle },
+  });
+}
+
+export function sendRefundEmail(args: {
+  to: string;
+  name?: string;
+  reportTitle: string;
+  amountFormatted: string;
+  orderId: string;
+}) {
+  const html = wrapBrandedHtml({
+    heading: "Your refund is on its way",
+    body: `<p>Dear ${escapeHtml(args.name?.trim() || "friend")},</p>
+           <p>We&#39;ve issued a refund of <strong style="color:${BRAND.gold};">${escapeHtml(args.amountFormatted)}</strong> for <strong>${escapeHtml(args.reportTitle)}</strong>.</p>
+           <p><span style="color:${BRAND.muted};">Order:</span> ${escapeHtml(args.orderId)}</p>
+           <p style="color:${BRAND.muted};font-size:13px;">Funds typically return to your original payment method within 5&ndash;10 business days.</p>`,
+  });
+  return sendResendEmail({
+    templateName: "refund",
+    to: args.to,
+    toName: args.name,
+    subject: `Refund issued: ${args.reportTitle}`,
+    html,
+    metadata: { orderId: args.orderId, reportTitle: args.reportTitle },
+  });
+}
+
+export function sendSupportReplyEmail(args: {
+  to: string;
+  name?: string;
+  ticketId: string;
+  subject: string;
+  messageHtml: string;
+}) {
+  const html = wrapBrandedHtml({
+    heading: `Re: ${escapeHtml(args.subject)}`,
+    body: `<p>Dear ${escapeHtml(args.name?.trim() || "friend")},</p>
+           ${args.messageHtml}
+           <p style="color:${BRAND.muted};font-size:13px;">Ticket: ${escapeHtml(args.ticketId)} &mdash; simply reply to this email to continue the conversation.</p>`,
+  });
+  return sendResendEmail({
+    templateName: "support_reply",
+    to: args.to,
+    toName: args.name,
+    subject: `Re: ${args.subject}`,
+    html,
+    metadata: { ticketId: args.ticketId },
   });
 }

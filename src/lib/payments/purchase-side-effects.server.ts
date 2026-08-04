@@ -34,10 +34,33 @@ export async function triggerPurchaseSideEffects(input: SideEffectInput) {
     created_at: new Date().toISOString(),
   });
 
-  // 2) Send transactional receipt / report-ready email via Resend when configured.
+  // 2) Send the branded receipt + report-ready lifecycle emails.
   try {
-    const { sendReportReadyEmail } = await import("@/lib/payments/report-ready-email.server");
-    await sendReportReadyEmail(input);
+    const { data: userRes } = await db.auth.admin.getUserById(input.userId);
+    const email = userRes?.user?.email;
+    if (email) {
+      const name =
+        (userRes?.user?.user_metadata as { full_name?: string } | undefined)?.full_name;
+      const { sendPurchaseReceiptEmail, sendReportReadyEmail } = await import(
+        "@/lib/email/service.server"
+      );
+      const amountFormatted = input.isFree
+        ? "Complimentary"
+        : `$${(input.amountCents / 100).toFixed(2)} ${input.currency}`;
+      await sendPurchaseReceiptEmail({
+        to: email,
+        name,
+        reportTitle: input.reportId,
+        amountFormatted,
+        orderId: input.stripeSessionId ?? `${input.userId}-${input.reportId}`,
+      });
+      await sendReportReadyEmail({
+        to: email,
+        name,
+        reportTitle: input.reportId,
+        downloadUrl: process.env.SITE_URL ?? "https://mycosmicblueprint.online",
+      });
+    }
   } catch (e) {
     console.error("[purchase-side-effects] email send failed", e);
   }

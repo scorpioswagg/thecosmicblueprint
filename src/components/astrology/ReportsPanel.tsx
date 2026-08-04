@@ -8,6 +8,7 @@ import { useCatalog } from "@/hooks/useCatalog";
 import type { CatalogEntry } from "@/lib/astrology/catalog";
 import { PdfPreviewModal } from "@/components/astrology/PdfPreviewModal";
 import { generateAstroReport } from "@/lib/astrology/generate-report.functions";
+import { notifyReportStarted, notifyReportReady } from "@/lib/email/lifecycle.functions";
 import { acknowledgeAdultConsent } from "@/lib/astrology/adult-consent.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { downloadLuxuryReportPdf, buildLuxuryReportPdfBytes } from "@/lib/astrology/luxury-pdf";
@@ -24,6 +25,8 @@ export function ReportsPanel({ chart }: { chart: ChartCalculation }) {
   const { catalog: REPORTS } = useCatalog();
   const [preview, setPreview] = useState<{ title: string; fileName: string; bytes: Uint8Array; report: GeneratedReport } | null>(null);
   const runReport = useServerFn(generateAstroReport);
+  const notifyStarted = useServerFn(notifyReportStarted);
+  const notifyReady = useServerFn(notifyReportReady);
   const runAckAdult = useServerFn(acknowledgeAdultConsent);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -91,8 +94,12 @@ export function ReportsPanel({ chart }: { chart: ChartCalculation }) {
           a: a.a, b: a.b, type: a.type, angle: a.angle, orb: a.orb, applying: a.applying,
         })),
       };
+      void notifyStarted({ data: { reportTitle: def?.title ?? reportId } }).catch(() => {});
       const result = await runReport({ data: { reportId, chart: chartPayload } });
       setReports((prev) => ({ ...prev, [reportId]: result }));
+      void notifyReady({ data: { reportTitle: result.title ?? def?.title ?? reportId } }).catch(
+        () => {},
+      );
       requestAnimationFrame(() => {
         document.getElementById(`report-${reportId}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
       });
