@@ -105,8 +105,69 @@ export function findPlaceholders(text: string): string[] {
 /* 4. Chapter + section validation                                     */
 /* ------------------------------------------------------------------ */
 
+export interface Chapter {
+  heading: string;
+  body: string;
+}
+
 export function listHeadings(text: string): string[] {
   return (text.match(/^##\s+.+$/gm) ?? []).map((h) => h.replace(/^##\s+/, "").trim());
+}
+
+/** Split a report into its leading preamble plus one entry per `## ` chapter. */
+export function splitChapters(text: string): { preamble: string; chapters: Chapter[] } {
+  const lines = text.split("\n");
+  const preamble: string[] = [];
+  const chapters: Chapter[] = [];
+  let current: Chapter | null = null;
+
+  for (const line of lines) {
+    const m = /^##\s+(.+?)\s*$/.exec(line);
+    if (m && !/^###/.test(line)) {
+      current = { heading: m[1].trim(), body: "" };
+      chapters.push(current);
+    } else if (current) {
+      current.body += (current.body ? "\n" : "") + line;
+    } else {
+      preamble.push(line);
+    }
+  }
+  return { preamble: preamble.join("\n").trim(), chapters };
+}
+
+export function joinChapters(preamble: string, chapters: Chapter[]): string {
+  const parts = [preamble.trim()].filter(Boolean);
+  for (const c of chapters) parts.push(`## ${c.heading}\n\n${c.body.trim()}`);
+  return parts.join("\n\n").trim();
+}
+
+const normKey = (s: string) => s.toLowerCase().replace(/[^a-z0-9 ]/g, "").replace(/\s+/g, " ").trim();
+
+/** Merge duplicate chapters (same heading), keeping the richest body. */
+export function dedupeChapters(chapters: Chapter[]): { chapters: Chapter[]; removed: string[] } {
+  const byKey = new Map<string, Chapter>();
+  const order: string[] = [];
+  const removed: string[] = [];
+
+  for (const c of chapters) {
+    const k = normKey(c.heading);
+    const existing = byKey.get(k);
+    if (!existing) {
+      byKey.set(k, { ...c });
+      order.push(k);
+      continue;
+    }
+    removed.push(c.heading);
+    // Keep the longer body; append genuinely new material from the shorter one.
+    const [keep, drop] =
+      c.body.length > existing.body.length ? [c, existing] : [existing, c];
+    const extra = drop.body.trim();
+    const merged =
+      extra && !keep.body.includes(extra.slice(0, 120)) ? `${keep.body.trim()}\n\n${extra}` : keep.body;
+    byKey.set(k, { heading: keep.heading, body: merged });
+  }
+
+  return { chapters: order.map((k) => byKey.get(k)!), removed };
 }
 
 export function findMissingSections(text: string, required: string[]): string[] {
@@ -121,12 +182,34 @@ export function findDuplicateHeadings(headings: string[]): string[] {
   const seen = new Set<string>();
   const dupes: string[] = [];
   for (const h of headings) {
-    const k = h.toLowerCase();
+    const k = normKey(h);
     if (seen.has(k)) dupes.push(h);
     seen.add(k);
   }
   return dupes;
 }
+
+/** Insert a regenerated chapter at the position implied by the required order. */
+export function insertChapterInOrder(
+  chapters: Chapter[],
+  chapter: Chapter,
+  requiredOrder: string[],
+): Chapter[] {
+  const idxOf = (heading: string) =>
+    requiredOrder.findIndex((r) => normKey(r) === normKey(heading) || normKey(heading).includes(normKey(r)));
+  const target = idxOf(chapter.heading);
+  if (target < 0) return [...chapters, chapter];
+
+  const out = [...chapters];
+  const at = out.findIndex((c) => {
+    const i = idxOf(c.heading);
+    return i >= 0 && i > target;
+  });
+  if (at < 0) out.push(chapter);
+  else out.splice(at, 0, chapter);
+  return out;
+}
+
 
 /* ------------------------------------------------------------------ */
 /* 5. Astrology validation                                             */
