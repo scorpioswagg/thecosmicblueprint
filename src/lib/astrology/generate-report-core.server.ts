@@ -37,6 +37,15 @@ export interface ReportChartInput {
   }>;
 }
 
+/** Second person's chart plus precomputed cross-chart data, for synastry reports. */
+export interface SynastryInput {
+  chart: ReportChartInput;
+  aspects: Array<{ a: string; b: string; type: string; orb: number }>;
+  overlaysAinB: Array<{ body: string; house: number }>;
+  overlaysBinA: Array<{ body: string; house: number }>;
+  composite: Array<{ name: string; sign: string; signDegree: number }>;
+}
+
 function fmtDeg(d: number) {
   const deg = Math.floor(d);
   const min = Math.round((d - deg) * 60);
@@ -103,6 +112,65 @@ ${houses}
 ASPECTS (top 40 by tightness):
 ${aspects}`;
 }
+
+function synastryToPrompt(
+  personA: string,
+  partner: SynastryInput,
+): string {
+  const p = partner.chart;
+  const partnerTimeUnknown = p.input.timeUnknown === true;
+  const b = p.bodies
+    .filter((x) => !(partnerTimeUnknown && ANGLE_BODIES.has(x.name)))
+    .map(
+      (x) =>
+        `- ${x.name}: ${x.sign} ${fmtDeg(x.signDegree)}${
+          !partnerTimeUnknown && x.house ? ` (House ${x.house})` : ""
+        }${x.retrograde ? " ℞" : ""}`,
+    )
+    .join("\n");
+
+  const cross = partner.aspects
+    .slice(0, 60)
+    .map((a) => `- ${personA}'s ${a.a} ${a.type} ${p.input.name}'s ${a.b} (orb ${a.orb.toFixed(2)}°)`)
+    .join("\n");
+
+  const oAB = partner.overlaysAinB
+    .map((o) => `- ${personA}'s ${o.body} falls in ${p.input.name}'s House ${o.house}`)
+    .join("\n");
+  const oBA = partner.overlaysBinA
+    .map((o) => `- ${p.input.name}'s ${o.body} falls in ${personA}'s House ${o.house}`)
+    .join("\n");
+
+  const composite = partner.composite
+    .map((c) => `- Composite ${c.name}: ${c.sign} ${fmtDeg(c.signDegree)}`)
+    .join("\n");
+
+  return `PARTNER (PERSON B) BIRTH:
+- Name: ${p.input.name}
+- Date${partnerTimeUnknown ? "" : "/Time"}: ${p.input.date}${partnerTimeUnknown ? " (BIRTH TIME UNKNOWN)" : ` ${p.input.time}`} (${p.input.timezone})
+- Place: ${p.input.place} (${p.input.latitude.toFixed(4)}, ${p.input.longitude.toFixed(4)})
+
+PERSON B PLACEMENTS:
+${b}
+
+CROSS-CHART (SYNASTRY) ASPECTS — Person A body to Person B body, tightest first:
+${cross || "- none within orb"}
+
+HOUSE OVERLAYS:
+${oAB || "- not available (birth time unknown)"}
+${oBA || "- not available (birth time unknown)"}
+
+COMPOSITE MIDPOINTS (the relationship chart):
+${composite}`;
+}
+
+const SYNASTRY_RULES = `SYNASTRY PROTOCOL (BINDING):
+- This is a two-chart relationship report. Person A is the client; Person B is the partner supplied.
+- Use ONLY the cross-chart aspects, house overlays and composite midpoints supplied. Never invent a contact.
+- Every claim about the relationship must cite a specific cross-chart aspect (with orb), a house overlay, or a composite placement.
+- Always name both people by name so the reading never becomes generic.
+- Describe both directions of each contact — what each person experiences is not the same thing.
+- Where a contact is difficult, say so plainly and give the working repair, not reassurance.`;
 
 export interface GeneratedReportPayload {
   reportId: string;
@@ -209,6 +277,7 @@ async function resolveDefinition(reportId: string): Promise<CatalogEntry | null>
 export async function generateReportMarkdown(input: {
   reportId: string;
   chart: ReportChartInput;
+  partner?: SynastryInput;
 }): Promise<GeneratedReportPayload> {
   const key = process.env.LOVABLE_API_KEY;
   if (!key) throw new Error("Missing LOVABLE_API_KEY");
@@ -221,7 +290,10 @@ export async function generateReportMarkdown(input: {
   const timeUnknown = input.chart.input.timeUnknown === true;
   const gateway = createLovableAiGatewayProvider(key);
   const model = gateway("google/gemini-3-flash-preview");
-  const chartBlock = chartToPrompt(input.chart, timeUnknown);
+  const baseChartBlock = chartToPrompt(input.chart, timeUnknown);
+  const chartBlock = input.partner
+    ? `${baseChartBlock}\n\n${synastryToPrompt(input.chart.input.name, input.partner)}`
+    : baseChartBlock;
 
   const userDataBlock = `USER DATA INPUT
 - Birth date: ${input.chart.input.date}
@@ -242,7 +314,8 @@ ${def.systemFraming}
 Required sections (use exactly these as ## H2 headings, in order):
 ${sectionsList}`;
 
-  const system = timeUnknown ? `${MASTER_PROMPT}\n\n${UNKNOWN_TIME_RULES}` : MASTER_PROMPT;
+  let system = timeUnknown ? `${MASTER_PROMPT}\n\n${UNKNOWN_TIME_RULES}` : MASTER_PROMPT;
+  if (input.partner) system = `${system}\n\n${SYNASTRY_RULES}`;
 
   const prompt = `${userDataBlock}
 
@@ -253,7 +326,9 @@ Target length: ~${def.targetWords} words.
 CHART DATA:
 ${chartBlock}
 
-Write the **${def.title}** report for ${input.chart.input.name} now. Do not include a preamble or restate the chart data verbatim; weave it into interpretation.`;
+Write the **${def.title}** report for ${input.chart.input.name}${
+    input.partner ? ` and ${input.partner.chart.input.name}` : ""
+  } now. Do not include a preamble or restate the chart data verbatim; weave it into interpretation.`;
 
   const { text } = await generateText({ model, system, prompt });
 
