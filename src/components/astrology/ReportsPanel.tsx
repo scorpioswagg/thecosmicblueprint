@@ -7,6 +7,13 @@ import type { ChartCalculation } from "@/lib/astrology/types";
 import { useCatalog } from "@/hooks/useCatalog";
 import type { CatalogEntry } from "@/lib/astrology/catalog";
 import { PdfPreviewModal } from "@/components/astrology/PdfPreviewModal";
+import { PartnerBirthModal } from "@/components/astrology/PartnerBirthModal";
+import {
+  calculateSynastryAspects,
+  calculateHouseOverlays,
+  calculateCompositeMidpoints,
+} from "@/lib/astrology/synastry";
+import { signFromLongitude } from "@/lib/astrology/zodiac";
 import { generateAstroReport } from "@/lib/astrology/generate-report.functions";
 import { notifyReportStarted, notifyReportReady } from "@/lib/email/lifecycle.functions";
 import { acknowledgeAdultConsent } from "@/lib/astrology/adult-consent.functions";
@@ -33,6 +40,8 @@ export function ReportsPanel({ chart }: { chart: ChartCalculation }) {
   const [reports, setReports] = useState<Record<string, GeneratedReport>>({});
   const [error, setError] = useState<string | null>(null);
   const [adultUnlocked, setAdultUnlocked] = useState(false);
+  const [partnerChart, setPartnerChart] = useState<ChartCalculation | null>(null);
+  const [partnerPrompt, setPartnerPrompt] = useState<{ reportId: string; title: string } | null>(null);
   const [bulk, setBulk] = useState<{
     label: string;
     current: number;
@@ -42,9 +51,61 @@ export function ReportsPanel({ chart }: { chart: ChartCalculation }) {
   } | null>(null);
   const isBulkRunning = bulk !== null;
 
+  function toChartPayload(c: ChartCalculation) {
+    return {
+      input: {
+        name: c.input.name,
+        date: c.input.date,
+        time: c.input.time,
+        place: c.input.place,
+        latitude: c.input.latitude,
+        longitude: c.input.longitude,
+        timezone: c.input.timezone,
+        timeUnknown: c.input.timeUnknown ?? false,
+      },
+      julianDayUT: c.julianDayUT,
+      utcIso: c.utcIso,
+      ascendant: c.ascendant,
+      midheaven: c.midheaven,
+      bodies: c.bodies.map((b) => ({
+        name: b.name, longitude: b.longitude, sign: b.sign,
+        signDegree: b.signDegree, house: b.house, retrograde: b.retrograde, speed: b.speed,
+      })),
+      houses: c.houses,
+      aspects: c.aspects.slice(0, 80).map((a) => ({
+        a: a.a, b: a.b, type: a.type, angle: a.angle, orb: a.orb, applying: a.applying,
+      })),
+    };
+  }
+
+  /** Cross-chart data for synastry reports, or undefined when no partner is loaded. */
+  function buildPartnerPayload(partner: ChartCalculation | null) {
+    if (!partner) return undefined;
+    return {
+      chart: toChartPayload(partner),
+      aspects: calculateSynastryAspects(chart, partner)
+        .slice(0, 200)
+        .map((a) => ({ a: a.a, b: a.b, type: a.type, orb: a.orb })),
+      overlaysAinB: calculateHouseOverlays(chart, partner),
+      overlaysBinA: calculateHouseOverlays(partner, chart),
+      composite: calculateCompositeMidpoints(chart, partner).map((c) => {
+        const { sign, degree } = signFromLongitude(c.longitude);
+        return { name: c.name, sign, signDegree: degree };
+      }),
+    };
+  }
+
+  /** Returns true when the report needs a partner chart we do not have yet. */
+  function needsPartner(def: CatalogEntry | undefined): boolean {
+    if (!def?.requiresPartner || partnerChart) return false;
+    setPartnerPrompt({ reportId: def.id, title: def.title });
+    return true;
+  }
+
   async function generate(reportId: string) {
     setError(null);
     const def = REPORTS.find((r) => r.id === reportId);
+    if (needsPartner(def)) return;
     if (def?.adult && !adultUnlocked) {
       const ok = typeof window !== "undefined" &&
         window.confirm(
@@ -65,37 +126,11 @@ export function ReportsPanel({ chart }: { chart: ChartCalculation }) {
       if (!sessionData.session || sessionData.session.user.is_anonymous) {
         throw new Error("Please sign in with Google to generate reports.");
       }
-      const chartPayload = {
-        input: {
-          name: chart.input.name,
-          date: chart.input.date,
-          time: chart.input.time,
-          place: chart.input.place,
-          latitude: chart.input.latitude,
-          longitude: chart.input.longitude,
-          timezone: chart.input.timezone,
-          timeUnknown: chart.input.timeUnknown ?? false,
-        },
-        julianDayUT: chart.julianDayUT,
-        utcIso: chart.utcIso,
-        ascendant: chart.ascendant,
-        midheaven: chart.midheaven,
-        bodies: chart.bodies.map((b) => ({
-          name: b.name,
-          longitude: b.longitude,
-          sign: b.sign,
-          signDegree: b.signDegree,
-          house: b.house,
-          retrograde: b.retrograde,
-          speed: b.speed,
-        })),
-        houses: chart.houses,
-        aspects: chart.aspects.slice(0, 80).map((a) => ({
-          a: a.a, b: a.b, type: a.type, angle: a.angle, orb: a.orb, applying: a.applying,
-        })),
-      };
+      const chartPayload = toChartPayload(chart);
       void notifyStarted({ data: { reportTitle: def?.title ?? reportId } }).catch(() => {});
-      const result = await runReport({ data: { reportId, chart: chartPayload } });
+      const result = await runReport({
+        data: { reportId, chart: chartPayload, partner: buildPartnerPayload(partnerChart) },
+      });
       setReports((prev) => ({ ...prev, [reportId]: result }));
       void notifyReady({ data: { reportTitle: result.title ?? def?.title ?? reportId } }).catch(
         () => {},
@@ -208,31 +243,21 @@ export function ReportsPanel({ chart }: { chart: ChartCalculation }) {
     opts: { throwOnError?: boolean } = {},
   ): Promise<GeneratedReport | null> {
     if (reports[reportId]) return reports[reportId];
+    const definition = REPORTS.find((r) => r.id === reportId);
+    if (needsPartner(definition)) {
+      if (opts.throwOnError) throw new Error("Add the second person's birth details first.");
+      return null;
+    }
     setLoadingId(reportId);
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData.session || sessionData.session.user.is_anonymous) {
         throw new Error("Please sign in with Google to generate reports.");
       }
-      const chartPayload = {
-        input: {
-          name: chart.input.name, date: chart.input.date, time: chart.input.time,
-          place: chart.input.place, latitude: chart.input.latitude,
-          longitude: chart.input.longitude, timezone: chart.input.timezone,
-          timeUnknown: chart.input.timeUnknown ?? false,
-        },
-        julianDayUT: chart.julianDayUT, utcIso: chart.utcIso,
-        ascendant: chart.ascendant, midheaven: chart.midheaven,
-        bodies: chart.bodies.map((b) => ({
-          name: b.name, longitude: b.longitude, sign: b.sign,
-          signDegree: b.signDegree, house: b.house, retrograde: b.retrograde, speed: b.speed,
-        })),
-        houses: chart.houses,
-        aspects: chart.aspects.slice(0, 80).map((a) => ({
-          a: a.a, b: a.b, type: a.type, angle: a.angle, orb: a.orb, applying: a.applying,
-        })),
-      };
-      const result = await runReport({ data: { reportId, chart: chartPayload } });
+      const chartPayload = toChartPayload(chart);
+      const result = await runReport({
+        data: { reportId, chart: chartPayload, partner: buildPartnerPayload(partnerChart) },
+      });
       setReports((prev) => ({ ...prev, [reportId]: result }));
       return result;
     } catch (e) {
@@ -372,7 +397,39 @@ export function ReportsPanel({ chart }: { chart: ChartCalculation }) {
                 Explicit · 18+
               </span>
             )}
+            {category === "Synastry" && (
+              <span className="text-[10px] tracking-widest text-gold/80 border border-gold/40 rounded-full px-2 py-0.5 normal-case">
+                Two charts
+              </span>
+            )}
           </h3>
+          {category === "Synastry" && (
+            <div className="mb-4 flex flex-wrap items-center gap-3">
+              <p className="text-xs text-muted-foreground/80 max-w-2xl">
+                Synastry compares your chart with a second person&apos;s. You&apos;ll be asked for their
+                birth details the first time you generate one.
+              </p>
+              {partnerChart ? (
+                <span className="text-[11px] uppercase tracking-widest text-gold border border-gold/40 rounded-md px-3 py-1.5">
+                  Partner: {partnerChart.input.name}
+                  <button
+                    onClick={() => setPartnerChart(null)}
+                    className="ml-2 text-muted-foreground hover:text-foreground"
+                    aria-label="Clear partner birth details"
+                  >
+                    ✕
+                  </button>
+                </span>
+              ) : (
+                <button
+                  onClick={() => setPartnerPrompt({ reportId: "", title: "Synastry reports" })}
+                  className="text-[11px] uppercase tracking-widest text-gold border border-gold/50 rounded-md px-4 py-2 hover:bg-gold/10 transition"
+                >
+                  + Add partner birth details
+                </button>
+              )}
+            </div>
+          )}
           {category === "Patriotic Collection" && (
             <div className="mb-4 flex flex-wrap gap-2">
               <button
@@ -598,7 +655,19 @@ export function ReportsPanel({ chart }: { chart: ChartCalculation }) {
           font-style: italic;
         }
       `}</style>
-          <PdfPreviewModal
+          <PartnerBirthModal
+        open={!!partnerPrompt}
+        reportTitle={partnerPrompt?.title ?? ""}
+        onClose={() => setPartnerPrompt(null)}
+        onReady={(c) => {
+          setPartnerChart(c);
+          const pending = partnerPrompt?.reportId;
+          setPartnerPrompt(null);
+          if (pending) void generate(pending);
+        }}
+      />
+
+      <PdfPreviewModal
         open={!!preview}
         title={preview?.title ?? ""}
         fileName={preview?.fileName ?? ""}
