@@ -118,5 +118,10 @@ export const generateAstroReport = createServerFn({ method: "POST" })
       }
     }
 
-    return await generateReportMarkdown({ reportId: data.reportId, chart: data.chart });
+    return await generateReportMarkdown({
+      reportId: data.reportId,
+      chart: data.chart,
+      partner: data.partner,
+    });
+
   });
