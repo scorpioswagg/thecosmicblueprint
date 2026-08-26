@@ -72,6 +72,12 @@ export const generateAstroReport = createServerFn({ method: "POST" })
     }
     const def = REPORTS.find((r) => r.id === data.reportId);
     if (!def) throw new Error(`Unknown report: ${data.reportId}`);
+    if (def.requiresPartner && !data.partner) {
+      throw new Error(
+        "PARTNER_REQUIRED: Add the second person's birth details to generate this synastry report.",
+      );
+    }
+
 
     // Admin bypass: admins may generate any report free of charge.
     const { data: isAdmin } = await context.supabase.rpc("has_role", {
