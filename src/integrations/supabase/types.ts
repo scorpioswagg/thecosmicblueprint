@@ -376,6 +376,51 @@ export type Database = {
           },
         ]
       }
+      synastry_sessions: {
+        Row: {
+          chart_a: Json
+          chart_b: Json
+          created_at: string
+          id: string
+          person_a_name: string
+          person_b_name: string
+          qa: Json
+          reports: Json
+          synastry: Json
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          chart_a?: Json
+          chart_b?: Json
+          created_at?: string
+          id?: string
+          person_a_name: string
+          person_b_name: string
+          qa?: Json
+          reports?: Json
+          synastry?: Json
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          chart_a?: Json
+          chart_b?: Json
+          created_at?: string
+          id?: string
+          person_a_name?: string
+          person_b_name?: string
+          qa?: Json
+          reports?: Json
+          synastry?: Json
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
