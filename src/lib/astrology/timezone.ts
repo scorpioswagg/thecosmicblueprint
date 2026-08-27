@@ -36,3 +36,52 @@ export function tzOffsetHoursFor(
   // tzAsUtc - asUtc.getTime() = offset (ms)
   return (tzAsUtc - asUtc.getTime()) / 3_600_000;
 }
+/** Thrown with a user-safe message when a birth timezone cannot be resolved. */
+export class TimezoneError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "TimezoneError";
+  }
+}
+
+/**
+ * Resolve the IANA timezone and the DST-correct UTC offset for a birth moment.
+ * Falls back from the geocoder's timezone to a coordinate lookup, and reports a
+ * clear, actionable message when neither works.
+ */
+export function resolveBirthTimezone(opts: {
+  latitude: number;
+  longitude: number;
+  date: string;   // YYYY-MM-DD
+  time: string;   // HH:MM
+  hintTimezone?: string;
+}): { timezone: string; offsetHours: number } {
+  const { latitude, longitude, date, time, hintTimezone } = opts;
+
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    throw new TimezoneError(
+      "The birthplace coordinates are missing. Search for the city again and pick a result from the list.",
+    );
+  }
+
+  let timezone = hintTimezone?.trim() || "";
+  if (!timezone) {
+    try {
+      timezone = timezoneAt(latitude, longitude);
+    } catch {
+      throw new TimezoneError(
+        "We couldn't determine the timezone for that location. Try selecting the nearest major city instead.",
+      );
+    }
+  }
+
+  try {
+    const offsetHours = tzOffsetHoursFor(`${date}T${time}`, timezone);
+    if (!Number.isFinite(offsetHours)) throw new Error("non-finite offset");
+    return { timezone, offsetHours };
+  } catch {
+    throw new TimezoneError(
+      `We couldn't calculate the UTC offset for ${timezone} on ${date}. Double-check the birth date, then try again.`,
+    );
+  }
+}
