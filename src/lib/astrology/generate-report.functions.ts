@@ -80,27 +80,35 @@ export const generateAstroReport = createServerFn({ method: "POST" })
 
 
     // Admin bypass: admins may generate any report free of charge.
-    const { data: isAdmin } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
+    const isAdmin = await has_role(context.userId, 'admin');
 
-    if (!isAdmin) {
-      // Non-admins MUST have a paid purchase row for this reportId.
-      const { data: purchase, error: purchaseErr } = await context.supabase
-        .from("report_purchases")
-        .select("id, status")
-        .eq("user_id", context.userId)
-        .eq("report_id", data.reportId)
-        .eq("status", "paid")
-        .limit(1)
-        .maybeSingle();
-      if (purchaseErr) throw new Error(purchaseErr.message);
-      if (!purchase) {
-        throw new Error(
-          "PAYMENT_REQUIRED: Please purchase this report to unlock generation.",
-        );
-      }
+if (!isAdmin) {
+  const reportPriceCents =
+    report.sale_price_cents ??
+    report.price_cents ??
+    0;
+
+  // Reports configured as free in the Admin Dashboard
+  // do not require a Stripe purchase.
+  if (reportPriceCents > 0) {
+    const { data: purchase, error: purchaseError } = await supabase
+      .from('report_purchases')
+      .select('status')
+      .eq('user_id', context.userId)
+      .eq('report_id', reportId)
+      .eq('status', 'paid')
+      .maybeSingle();
+
+    if (purchaseError) {
+      console.error('Purchase verification failed:', purchaseError);
+      throw new Error('PAYMENT_VERIFICATION_FAILED');
+    }
+
+    if (!purchase) {
+      throw new Error('PAYMENT_REQUIRED');
+    }
+  }
+}
 
       // Adult (18+) reports still require persisted server-side consent.
       if (def.adult) {
