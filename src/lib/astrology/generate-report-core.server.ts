@@ -317,16 +317,8 @@ ${sectionsList}`;
   let system = timeUnknown ? `${MASTER_PROMPT}\n\n${UNKNOWN_TIME_RULES}` : MASTER_PROMPT;
   if (input.partner) system = `${system}\n\n${SYNASTRY_RULES}`;
 
-  const prompt = `${userDataBlock}
-
-${reportModule}
-
-Target length: ~${def.targetWords} words.
-
-CHART DATA:
-${chartBlock}
-
-Write the **${def.title}** report for ${input.chart.input.name}${
+  const prompt = `${userDataBlock}\n\n${reportModule}\n\nTarget length: ~${def.targetWords} words.\n\nCHART DATA:
+${chartBlock}\n\nWrite the **${def.title}** report for ${input.chart.input.name}${
     input.partner ? ` and ${input.partner.chart.input.name}` : ""
   } now. Do not include a preamble or restate the chart data verbatim; weave it into interpretation.`;
 
