@@ -22,7 +22,6 @@ async function adminClient() {
 export async function triggerPurchaseSideEffects(input: SideEffectInput) {
   const db = await adminClient();
 
-  // 1) Record a side-effect audit log row.
   await (db as any).from("purchase_events").insert({
     user_id: input.userId,
     report_id: input.reportId,
@@ -34,19 +33,13 @@ export async function triggerPurchaseSideEffects(input: SideEffectInput) {
     created_at: new Date().toISOString(),
   });
 
-  // 2) Send the branded receipt + report-ready lifecycle emails.
   try {
     const { data: userRes } = await db.auth.admin.getUserById(input.userId);
     const email = userRes?.user?.email;
     if (email) {
-      const name =
-        (userRes?.user?.user_metadata as { full_name?: string } | undefined)?.full_name;
-      const { sendPurchaseReceiptEmail, sendReportReadyEmail } = await import(
-        "@/lib/email/service.server"
-      );
-      const amountFormatted = input.isFree
-        ? "Complimentary"
-        : `$${(input.amountCents / 100).toFixed(2)} ${input.currency}`;
+      const name = (userRes?.user?.user_metadata as { full_name?: string } | undefined)?.full_name;
+      const { sendPurchaseReceiptEmail, sendReportReadyEmail } = await import("@/lib/email/service.server");
+      const amountFormatted = input.isFree ? "Complimentary" : `$${(input.amountCents / 100).toFixed(2)} ${input.currency}`;
       await sendPurchaseReceiptEmail({
         to: email,
         name,
@@ -65,7 +58,6 @@ export async function triggerPurchaseSideEffects(input: SideEffectInput) {
     console.error("[purchase-side-effects] email send failed", e);
   }
 
-  // 3) Broadcast a real-time unlock event if Supabase realtime is available.
   try {
     await (db as any).channel("report-unlocks").send({
       type: "broadcast",
@@ -77,7 +69,6 @@ export async function triggerPurchaseSideEffects(input: SideEffectInput) {
       },
     });
   } catch (e) {
-    // Realtime may not be enabled; log only.
     console.warn("[purchase-side-effects] broadcast skipped", e);
   }
 }
