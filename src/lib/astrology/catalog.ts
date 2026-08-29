@@ -1,3 +1,8 @@
+import {
+  getEffectivePriceCents,
+  normalizeAccessMode,
+  type ReportAccessMode,
+} from "./report-access";
 import { REPORTS, type ReportDefinition } from "./reports-catalog";
 
 /** Row shape of public.report_catalog (admin-managed overrides + custom reports). */
@@ -27,6 +32,9 @@ export interface CatalogRow {
   adult: boolean;
   icon: string | null;
   sort_order: number;
+  access_mode: ReportAccessMode | null;
+  requires_partner: boolean;
+  report_version: number;
 }
 
 /** A report as the rest of the app consumes it: code default merged with DB overrides. */
@@ -46,6 +54,9 @@ export interface CatalogEntry extends ReportDefinition {
   seoKeywords: string[];
   metadata: Record<string, unknown>;
   sortOrder: number;
+  accessMode: ReportAccessMode;
+  requiresPartner: boolean;
+  reportVersion: number;
   /** True when the entry exists only in the database (created by an admin). */
   custom: boolean;
 }
@@ -60,6 +71,9 @@ function fromDefinition(def: ReportDefinition, order: number): CatalogEntry {
     seoKeywords: [],
     metadata: {},
     sortOrder: order,
+    accessMode: normalizeAccessMode(def.accessMode, getEffectivePriceCents({ priceCents: def.priceCents })),
+    requiresPartner: def.requiresPartner ?? false,
+    reportVersion: def.reportVersion ?? 1,
     custom: false,
   };
 }
@@ -83,8 +97,16 @@ function applyRow(base: CatalogEntry | null, row: CatalogRow): CatalogEntry {
       seoKeywords: [],
       metadata: {},
       sortOrder: row.sort_order,
+      accessMode: normalizeAccessMode(row.access_mode, getEffectivePriceCents({ salePriceCents: row.sale_price_cents, priceCents: row.price_cents })),
+      requiresPartner: row.requires_partner ?? false,
+      reportVersion: row.report_version ?? 1,
       custom: true,
     } as CatalogEntry);
+
+  const effectivePriceCents = getEffectivePriceCents({
+    salePriceCents: row.sale_price_cents,
+    priceCents: row.price_cents,
+  });
 
   return {
     ...seed,
@@ -113,6 +135,9 @@ function applyRow(base: CatalogEntry | null, row: CatalogRow): CatalogEntry {
     targetWords: row.target_words || seed.targetWords,
     adult: row.adult ?? seed.adult,
     sortOrder: row.sort_order,
+    accessMode: normalizeAccessMode(row.access_mode, effectivePriceCents),
+    requiresPartner: row.requires_partner ?? seed.requiresPartner ?? false,
+    reportVersion: row.report_version ?? seed.reportVersion ?? 1,
     custom: seed.custom,
   };
 }
@@ -133,4 +158,4 @@ export function mergeCatalog(rows: CatalogRow[], opts?: { includeInactive?: bool
 }
 
 export const CATALOG_SELECT =
-  "id,title,category,description,short_description,cover_image_url,features,price_cents,sale_price_cents,currency,estimated_delivery,is_active,stripe_product_id,stripe_price_id,metadata,seo_title,seo_description,seo_keywords,sections,prompt_module,system_framing,target_words,adult,icon,sort_order";
+  "id,title,category,description,short_description,cover_image_url,features,price_cents,sale_price_cents,currency,estimated_delivery,is_active,stripe_product_id,stripe_price_id,metadata,seo_title,seo_description,seo_keywords,sections,prompt_module,system_framing,target_words,adult,icon,sort_order,access_mode,requires_partner,report_version";
