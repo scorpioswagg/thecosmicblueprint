@@ -48,8 +48,14 @@ export interface CatalogEntry extends ReportDefinition {
   seoKeywords: string[];
   metadata: Record<string, unknown>;
   sortOrder: number;
+  /** free | paid | admin-only, derived from metadata.access_mode or effective price. */
+  accessMode: ReportAccessMode;
   /** True when the entry exists only in the database (created by an admin). */
   custom: boolean;
+}
+
+function effectivePrice(entry: { priceCents?: number; salePriceCents?: number }): number {
+  return entry.salePriceCents ?? entry.priceCents ?? 0;
 }
 
 function fromDefinition(def: ReportDefinition, order: number): CatalogEntry {
@@ -62,9 +68,11 @@ function fromDefinition(def: ReportDefinition, order: number): CatalogEntry {
     seoKeywords: [],
     metadata: {},
     sortOrder: order,
+    accessMode: normalizeAccessMode(undefined, effectivePrice(def as { priceCents?: number })),
     custom: false,
   };
 }
+
 
 function applyRow(base: CatalogEntry | null, row: CatalogRow): CatalogEntry {
   const seed =
