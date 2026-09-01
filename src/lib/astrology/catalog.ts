@@ -1,4 +1,6 @@
 import { REPORTS, type ReportDefinition } from "./reports-catalog";
+import { normalizeAccessMode, type ReportAccessMode } from "./report-access";
+
 
 /** Row shape of public.report_catalog (admin-managed overrides + custom reports). */
 export interface CatalogRow {
@@ -46,8 +48,14 @@ export interface CatalogEntry extends ReportDefinition {
   seoKeywords: string[];
   metadata: Record<string, unknown>;
   sortOrder: number;
+  /** free | paid | admin-only, derived from metadata.access_mode or effective price. */
+  accessMode: ReportAccessMode;
   /** True when the entry exists only in the database (created by an admin). */
   custom: boolean;
+}
+
+function effectivePrice(entry: { priceCents?: number; salePriceCents?: number }): number {
+  return entry.salePriceCents ?? entry.priceCents ?? 0;
 }
 
 function fromDefinition(def: ReportDefinition, order: number): CatalogEntry {
@@ -60,9 +68,11 @@ function fromDefinition(def: ReportDefinition, order: number): CatalogEntry {
     seoKeywords: [],
     metadata: {},
     sortOrder: order,
+    accessMode: normalizeAccessMode(undefined, effectivePrice(def as { priceCents?: number })),
     custom: false,
   };
 }
+
 
 function applyRow(base: CatalogEntry | null, row: CatalogRow): CatalogEntry {
   const seed =
@@ -83,7 +93,9 @@ function applyRow(base: CatalogEntry | null, row: CatalogRow): CatalogEntry {
       seoKeywords: [],
       metadata: {},
       sortOrder: row.sort_order,
+      accessMode: "free" as ReportAccessMode,
       custom: true,
+
     } as CatalogEntry);
 
   return {
@@ -112,7 +124,12 @@ function applyRow(base: CatalogEntry | null, row: CatalogRow): CatalogEntry {
     systemFraming: row.system_framing || seed.systemFraming,
     targetWords: row.target_words || seed.targetWords,
     adult: row.adult ?? seed.adult,
+    accessMode: normalizeAccessMode(
+      (row.metadata as Record<string, unknown> | null)?.["access_mode"],
+      row.sale_price_cents ?? row.price_cents ?? 0,
+    ),
     sortOrder: row.sort_order,
+
     custom: seed.custom,
   };
 }
