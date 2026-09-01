@@ -1,0 +1,9 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  # This TanStack Start app builds on Nitro, which otherwise defaults to a
+  # Cloudflare Worker target. Point it at Netlify so it emits Netlify
+  # Functions (.netlify/functions-internal) instead.
+  NITRO_PRESET = "netlify"
