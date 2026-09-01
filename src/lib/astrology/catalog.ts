@@ -1,4 +1,6 @@
 import { REPORTS, type ReportDefinition } from "./reports-catalog";
+import { normalizeAccessMode, type ReportAccessMode } from "./report-access";
+
 
 /** Row shape of public.report_catalog (admin-managed overrides + custom reports). */
 export interface CatalogRow {
