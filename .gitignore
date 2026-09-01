@@ -20,6 +20,11 @@ dist-ssr
 .wrangler/
 .dev.vars
 
+# Bun lockfile resolves packages from Lovable's internal sandbox registry,
+# which is unreachable from external CI (e.g. Netlify) - npm's lockfile is
+# the one that installs from the public registry.
+bun.lock
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
