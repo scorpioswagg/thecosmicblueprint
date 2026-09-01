@@ -101,6 +101,25 @@ export function findPlaceholders(text: string): string[] {
   return PLACEHOLDER_PATTERNS.filter(([re]) => re.test(text)).map(([, label]) => label);
 }
 
+/**
+ * Deterministic last-resort scrub: strip placeholder artefacts from prose so a
+ * cosmetic template leftover can never block an otherwise finished report.
+ */
+export function scrubPlaceholders(text: string): string {
+  return text
+    .replace(/\[insert[^\]]*\]/gi, "")
+    .replace(/\[placeholder[^\]]*\]/gi, "")
+    .replace(/\[customer name\]/gi, "")
+    .replace(/\[your name\]/gi, "")
+    .replace(/\{\{[^}]+\}\}/g, "")
+    .replace(/lorem ipsum[^.]*\.?/gi, "")
+    .replace(/\bTBD\b/gi, "")
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/ ([,.;:!?])/g, "$1")
+    .replace(/\n{3,}/g, "\n\n");
+}
+
+
 /* ------------------------------------------------------------------ */
 /* 4. Chapter + section validation                                     */
 /* ------------------------------------------------------------------ */
