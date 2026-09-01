@@ -93,7 +93,9 @@ function applyRow(base: CatalogEntry | null, row: CatalogRow): CatalogEntry {
       seoKeywords: [],
       metadata: {},
       sortOrder: row.sort_order,
+      accessMode: "free" as ReportAccessMode,
       custom: true,
+
     } as CatalogEntry);
 
   return {
