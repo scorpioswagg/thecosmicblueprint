@@ -122,7 +122,12 @@ function applyRow(base: CatalogEntry | null, row: CatalogRow): CatalogEntry {
     systemFraming: row.system_framing || seed.systemFraming,
     targetWords: row.target_words || seed.targetWords,
     adult: row.adult ?? seed.adult,
+    accessMode: normalizeAccessMode(
+      (row.metadata as Record<string, unknown> | null)?.["access_mode"],
+      row.sale_price_cents ?? row.price_cents ?? 0,
+    ),
     sortOrder: row.sort_order,
+
     custom: seed.custom,
   };
 }
