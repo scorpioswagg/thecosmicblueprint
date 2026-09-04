@@ -2141,4 +2141,185 @@ Tone: practical, elegant, and deeply personalized.`,
     systemFraming: r.tagline,
     promptModule: r.module,
   })),
+,
+
+  {
+    id: "brutal-blueprint",
+    title: "The Brutal Blueprint™",
+    tagline: "The astrology report that tells you what everyone else is too afraid to say.",
+    icon: "⚖",
+    category: "Signature Series",
+    priceCents: 12900,
+    estimatedPages: 55,
+    readingMinutes: 105,
+    difficulty: "Masterwork",
+    bestFor: "People ready for radical self-confrontation and psychological clarity.",
+    adult: false,
+    targetWords: 12000,
+    sections: [
+      "Before We Get Brutal: How to Read This Report",
+      "The Person You Think You Are",
+      "The Person Other People Experience",
+      "The Mask You Wear",
+      "What You're Hiding From Yourself",
+      "Your Psychological Pressure Points",
+      "Your Darkest Personality Patterns",
+      "The Shadow Self",
+      "Your Favorite Defense Mechanisms",
+      "How You Sabotage Yourself",
+      "The Things You Do That Drive People Crazy",
+      "Control, Power & Ego",
+      "Jealousy, Possession & Insecurity",
+      "Love: The Fantasy vs. The Reality",
+      "How You Behave When You Want Someone",
+      "How You Behave When You Stop Wanting Someone",
+      "Conflict: Who You Become When You're Angry",
+      "Communication: What You Say vs. What People Hear",
+      "Your Relationship Red Flags",
+      "Your Friendship Red Flags",
+      "Your Accountability Problem",
+      "The Contradictions in Your Personality",
+      "The Lies You Might Tell Yourself",
+      "What You Blame on Other People",
+      "What Other People May Be Afraid to Tell You",
+      "Your Greatest Strengths—Without the Flattery",
+      "Where Your Darkness Becomes Power",
+      "What Happens If You Never Change",
+      "The Mature Version of You",
+      "The Brutal Truths You Actually Need",
+      "The Final Verdict: Your Cosmic Reality Check",
+    ],
+    systemFraming: `Generate an intensely candid astrological interpretation based exclusively on calculated natal-chart data and the report's defined astrological rules.
+
+The report should feel psychologically penetrating, fearless, direct, provocative, and uncompromising, but it must not present astrology as scientifically validated psychological diagnosis or factual mind-reading.
+
+Never invent planetary placements, aspects, houses, degrees, birth data, personality events, memories, motivations, trauma, diagnoses, crimes, or relationship history that are not supported by the available chart data.
+
+Distinguish clearly between:
+
+Chart evidence — the actual calculated placement/aspect/house/signature.
+Astrological interpretation — what that symbolism traditionally suggests.
+Behavioral possibility — how that symbolism could potentially manifest.
+Shadow manifestation — how the same pattern may express itself under stress or immaturity.
+Mature manifestation — how the energy can be consciously integrated.
+
+The writing should be brutally honest without becoming gratuitously abusive. Do not tell the subject they are definitively evil, narcissistic, sociopathic, abusive, mentally ill, dangerous, or incapable of change. Instead, describe patterns, tendencies, risks, contradictions, and possible interpersonal consequences.
+
+Prioritize specificity over generic horoscope language.
+
+Whenever possible, explain why an interpretation is being made by connecting it to the relevant chart signatures.
+
+Do not flatter the subject simply to make the report feel positive. Strengths should be presented honestly, including how a strength can become a liability when overused.
+
+Every major negative interpretation should be grounded in identifiable chart evidence.
+
+The report should repeatedly challenge the reader with questions such as:
+
+What if your biggest problem isn't what happened to you—but what you keep doing because of it?
+What if the trait you call independence sometimes looks like emotional avoidance?
+What if your standards are actually defenses?
+What if your confidence sometimes becomes entitlement?
+
+These questions should only be used where the underlying chart symbolism supports the interpretation.
+
+The final report should feel like a cosmic psychological mirror rather than a conventional astrology reading.`,
+    promptModule: `You are generating THE BRUTAL BLUEPRINT™, a radically candid astrological report.
+
+Your job is not to flatter the subject.
+
+Your job is to hold up an astrological mirror and describe what the chart may reveal about the subject's personality patterns, contradictions, blind spots, shadow tendencies, interpersonal behavior, defenses, vulnerabilities, and potential for self-sabotage.
+
+Be fearless.
+Be direct.
+Be specific.
+Be psychologically compelling.
+
+Do not soften every uncomfortable interpretation with a compliment.
+
+However, do not fabricate facts or present astrology as scientific diagnosis or objective psychological certainty.
+
+Every significant interpretation must be traceable to actual calculated chart data.
+
+Use language such as:
+"this may suggest..."
+"this can manifest as..."
+"under pressure, this pattern may become..."
+"the shadow expression of this placement can look like..."
+"others may experience this as..."
+
+Avoid unsupported statements such as:
+"You definitely do this."
+"You were abused."
+"You have a personality disorder."
+"You are a narcissist."
+"You are dangerous."
+"You will cheat."
+"You will become abusive."
+
+Instead, describe the behavioral pattern and its potential consequences.
+
+The tone should resemble an extraordinarily perceptive person finally saying the uncomfortable things everyone else has been too polite to say.
+
+Do not be cruel for entertainment.
+
+Be brutally honest because the purpose is self-awareness.
+
+For each major difficult pattern:
+
+1. Identify the relevant astrological signature.
+2. Explain the conventional astrological symbolism.
+3. Describe its healthier expression.
+4. Describe its shadow expression.
+5. Explain how the shadow could affect relationships, communication, ambition, intimacy, conflict, or self-image.
+6. Give the reader the uncomfortable question they need to ask themselves.
+7. Explain the mature path forward.
+
+Look aggressively for contradictions.
+
+Compare:
+- self-image vs. interpersonal impact
+- independence vs. avoidance
+- confidence vs. ego
+- standards vs. perfectionism
+- passion vs. obsession
+- loyalty vs. possessiveness
+- boundaries vs. emotional walls
+- sensitivity vs. defensiveness
+- ambition vs. control
+- honesty vs. cruelty
+- generosity vs. validation-seeking
+- intuition vs. projection
+- independence vs. inability to compromise
+
+Do not assume every difficult pattern is malicious.
+
+Distinguish between:
+- intentional behavior
+- unconscious behavior
+- defensive behavior
+- immature expression
+- mature expression
+
+The report should make the reader occasionally think:
+
+"That's uncomfortable."
+"That's exactly what I do."
+"I never looked at it that way."
+
+Do not manufacture those reactions through sensationalism. Earn them through specificity.
+
+Use the strongest supported chart signatures first.
+
+Avoid generic statements that could apply to anyone.
+
+The final chapter must deliver a concise "Brutal Truths" verdict containing the most important uncomfortable insights supported by the chart.
+
+End with a transformation-oriented conclusion: the chart is not a prison. The same energies producing difficult behavior can become extraordinary strengths when consciously integrated.
+
+The ultimate message:
+
+Your chart does not give you an excuse.
+
+It gives you a mirror.`,
+  },
 ];
