@@ -68,16 +68,28 @@ function effectivePrice(entry: { priceCents?: number; salePriceCents?: number })
 }
 
 function fromDefinition(def: ReportDefinition, order: number): CatalogEntry {
-  return {
+  const priceCents = priceForReport(def);
+  const enriched: ReportDefinition = {
     ...def,
-    features: [],
+    priceCents,
+    estimatedPages: estimatedPagesFor(def),
+    readingMinutes: readingMinutesFor(def),
+  };
+  return {
+    ...enriched,
+    description: describeReport(def),
+    shortDescription: shortDescriptionFor(def),
+    coverImageUrl: coverForCategory(def.category),
+    features: featuresFor(def),
     currency: "USD",
     estimatedDelivery: "Instant",
     isActive: true,
-    seoKeywords: [],
+    seoTitle: `${def.title} — Personalised Astrology Report`,
+    seoDescription: shortDescriptionFor(def),
+    seoKeywords: [def.title.toLowerCase(), def.category.toLowerCase(), "astrology report", "natal chart"],
     metadata: {},
     sortOrder: order,
-    accessMode: normalizeAccessMode(undefined, effectivePrice(def as { priceCents?: number })),
+    accessMode: normalizeAccessMode(undefined, effectivePrice(enriched)),
     custom: false,
   };
 }
