@@ -193,7 +193,12 @@ export function ReportsPanel({ chart }: { chart: ChartCalculation }) {
           Each report is generated from your real Swiss Ephemeris chart data — no templates, no guesswork.
         </p>
         {isAdmin && (
-          <p className="mt-3 text-sm text-gold">Administrator access active — every report and PDF is free on this account.</p>
+          <>
+            <p className="mt-3 text-sm text-gold">Administrator access active — every report and PDF is free on this account.</p>
+            <Link to="/admin/reports" className="inline-block mt-3 text-[11px] uppercase tracking-widest text-gold border border-gold/50 rounded-md px-4 py-2 hover:bg-gold/10 transition">
+              Add or edit reports
+            </Link>
+          </>
         )}
       </div>
 
@@ -206,18 +211,40 @@ export function ReportsPanel({ chart }: { chart: ChartCalculation }) {
               const isDone = !!reports[r.id];
               const isActive = activeId === r.id;
               return (
-                <div key={r.id} className={`text-left glass rounded-xl p-5 border transition group flex flex-col ${isActive ? "border-gold/60 shadow-gold" : "border-border/40 hover:border-gold/40"}`}>
-                  <button onClick={() => generate(r.id)} disabled={isLoading} className="text-left flex-1">
-                    <div className="flex items-start justify-between mb-2">
-                      <span className="text-3xl text-gold">{r.icon}</span>
-                      <span className="text-[10px] uppercase tracking-widest text-muted-foreground">{isLoading ? "generating..." : isDone ? "ready" : accessLabel(r)}</span>
+                <div key={r.id} className={`text-left glass rounded-xl border overflow-hidden transition group flex flex-col ${isActive ? "border-gold/60 shadow-gold" : "border-border/40 hover:border-gold/40"}`}>
+                  <button onClick={() => generate(r.id)} disabled={isLoading} className="text-left flex-1 flex flex-col">
+                    {r.coverImageUrl && (
+                      <img
+                        src={r.coverImageUrl}
+                        alt={`${r.title} report cover`}
+                        loading="lazy"
+                        width={1024}
+                        height={640}
+                        className="w-full h-32 object-cover"
+                      />
+                    )}
+                    <div className="p-5 flex-1 flex flex-col">
+                      <div className="flex items-start justify-between mb-2">
+                        <span className="text-3xl text-gold">{r.icon}</span>
+                        <span className="text-[10px] uppercase tracking-widest text-muted-foreground">{isLoading ? "generating..." : isDone ? "ready" : accessLabel(r)}</span>
+                      </div>
+                      <h4 className="font-display text-lg text-foreground">{r.title}</h4>
+                      <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed line-clamp-4">{r.description ?? r.tagline}</p>
+                      {r.features.length > 0 && (
+                        <ul className="mt-3 space-y-1">
+                          {r.features.map((f) => (
+                            <li key={f} className="text-[11px] text-muted-foreground/90 flex gap-2">
+                              <span className="text-gold">·</span>
+                              <span>{f}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      <p className="text-[11px] text-gold mt-3">{isAdmin ? "Free for admins - no purchase required" : r.accessMode === "paid" ? "Purchase required for non-admin accounts" : r.accessMode === "admin-only" ? "Administrator access required" : "Available without purchase"}</p>
                     </div>
-                    <h4 className="font-display text-lg text-foreground">{r.title}</h4>
-                    <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">{r.tagline}</p>
-                    <p className="text-[11px] text-gold mt-3">{isAdmin ? "Free for admins - no purchase required" : r.accessMode === "paid" ? "Purchase required for non-admin accounts" : r.accessMode === "admin-only" ? "Administrator access required" : "Available without purchase"}</p>
                   </button>
                   {isDone && (
-                    <div className="mt-3 grid grid-cols-3 gap-2">
+                    <div className="px-5 pb-5 grid grid-cols-3 gap-2">
                       <button onClick={(e) => { e.stopPropagation(); openPreview(reports[r.id]); }} className="text-[11px] uppercase tracking-widest text-gold border border-gold/40 rounded-md py-1.5 hover:bg-gold/10 transition">Preview</button>
                       <button onClick={(e) => { e.stopPropagation(); downloadReport(reports[r.id]); }} className="text-[11px] uppercase tracking-widest text-gold border border-gold/40 rounded-md py-1.5 hover:bg-gold/10 transition">.md</button>
                       <button onClick={(e) => { e.stopPropagation(); downloadReportPdf(reports[r.id]); }} className="text-[11px] uppercase tracking-widest text-gold border border-gold/40 rounded-md py-1.5 hover:bg-gold/10 transition">PDF</button>

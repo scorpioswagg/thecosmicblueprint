@@ -1,5 +1,14 @@
 import { REPORTS, type ReportDefinition } from "./reports-catalog";
 import { normalizeAccessMode, type ReportAccessMode } from "./report-access";
+import {
+  coverForCategory,
+  describeReport,
+  featuresFor,
+  priceForReport,
+  shortDescriptionFor,
+  estimatedPagesFor,
+  readingMinutesFor,
+} from "./report-content";
 
 
 /** Row shape of public.report_catalog (admin-managed overrides + custom reports). */
@@ -59,16 +68,28 @@ function effectivePrice(entry: { priceCents?: number; salePriceCents?: number })
 }
 
 function fromDefinition(def: ReportDefinition, order: number): CatalogEntry {
-  return {
+  const priceCents = priceForReport(def);
+  const enriched: ReportDefinition = {
     ...def,
-    features: [],
+    priceCents,
+    estimatedPages: estimatedPagesFor(def),
+    readingMinutes: readingMinutesFor(def),
+  };
+  return {
+    ...enriched,
+    description: describeReport(def),
+    shortDescription: shortDescriptionFor(def),
+    coverImageUrl: coverForCategory(def.category),
+    features: featuresFor(def),
     currency: "USD",
     estimatedDelivery: "Instant",
     isActive: true,
-    seoKeywords: [],
+    seoTitle: `${def.title} — Personalised Astrology Report`,
+    seoDescription: shortDescriptionFor(def),
+    seoKeywords: [def.title.toLowerCase(), def.category.toLowerCase(), "astrology report", "natal chart"],
     metadata: {},
     sortOrder: order,
-    accessMode: normalizeAccessMode(undefined, effectivePrice(def as { priceCents?: number })),
+    accessMode: normalizeAccessMode(undefined, effectivePrice(enriched)),
     custom: false,
   };
 }
@@ -89,6 +110,7 @@ function applyRow(base: CatalogEntry | null, row: CatalogRow): CatalogEntry {
       features: [],
       currency: "USD",
       estimatedDelivery: "Instant",
+      coverImageUrl: coverForCategory(row.category),
       isActive: true,
       seoKeywords: [],
       metadata: {},
@@ -106,7 +128,7 @@ function applyRow(base: CatalogEntry | null, row: CatalogRow): CatalogEntry {
     tagline: row.short_description || seed.tagline,
     description: row.description ?? seed.description,
     shortDescription: row.short_description ?? seed.shortDescription,
-    coverImageUrl: row.cover_image_url ?? seed.coverImageUrl,
+    coverImageUrl: row.cover_image_url || seed.coverImageUrl || coverForCategory(row.category),
     features: row.features?.length ? row.features : seed.features,
     priceCents: row.price_cents,
     salePriceCents: row.sale_price_cents ?? undefined,
