@@ -229,7 +229,7 @@ export function ReportsPanel({ chart }: { chart: ChartCalculation }) {
                         <span className="text-[10px] uppercase tracking-widest text-muted-foreground">{isLoading ? "generating..." : isDone ? "ready" : accessLabel(r)}</span>
                       </div>
                       <h4 className="font-display text-lg text-foreground">{r.title}</h4>
-                      <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">{r.description ?? r.tagline}</p>
+                      <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed line-clamp-4">{r.description ?? r.tagline}</p>
                       {r.features.length > 0 && (
                         <ul className="mt-3 space-y-1">
                           {r.features.map((f) => (
@@ -244,7 +244,7 @@ export function ReportsPanel({ chart }: { chart: ChartCalculation }) {
                     </div>
                   </button>
                   {isDone && (
-                    <div className="mt-3 grid grid-cols-3 gap-2">
+                    <div className="px-5 pb-5 grid grid-cols-3 gap-2">
                       <button onClick={(e) => { e.stopPropagation(); openPreview(reports[r.id]); }} className="text-[11px] uppercase tracking-widest text-gold border border-gold/40 rounded-md py-1.5 hover:bg-gold/10 transition">Preview</button>
                       <button onClick={(e) => { e.stopPropagation(); downloadReport(reports[r.id]); }} className="text-[11px] uppercase tracking-widest text-gold border border-gold/40 rounded-md py-1.5 hover:bg-gold/10 transition">.md</button>
                       <button onClick={(e) => { e.stopPropagation(); downloadReportPdf(reports[r.id]); }} className="text-[11px] uppercase tracking-widest text-gold border border-gold/40 rounded-md py-1.5 hover:bg-gold/10 transition">PDF</button>
