@@ -261,6 +261,8 @@ export function ReportsPanel({ chart }: { chart: ChartCalculation }) {
             </button>
           )}
         </div>
+      </div>
+
 
 
       {Object.entries(grouped).map(([category, items]) => (
