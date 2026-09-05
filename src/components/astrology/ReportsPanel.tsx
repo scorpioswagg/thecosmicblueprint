@@ -140,6 +140,9 @@ export function ReportsPanel({ chart }: { chart: ChartCalculation }) {
       void notifyStarted({ data: { reportTitle: def?.title ?? reportId } }).catch(() => {});
       const result = await runReport({ data: { reportId, chart: chartPayload, partner: buildPartnerPayload(partnerChart) } });
       setReports((prev) => ({ ...prev, [reportId]: result }));
+      if (def?.requiresPartner && partnerChart) {
+        void saveSynastrySession(sessionData.session.user.id, result, partnerChart);
+      }
       if (isAdmin) toast.success("Admin access applied: this report was unlocked without purchase.");
       void notifyReady({ data: { reportTitle: result.title ?? def?.title ?? reportId } }).catch(() => {});
       requestAnimationFrame(() => {
@@ -155,6 +158,27 @@ export function ReportsPanel({ chart }: { chart: ChartCalculation }) {
       setLoadingId(null);
     }
   }
+
+  /** Persists a completed two-chart reading so it can be reopened from /dashboard. */
+  async function saveSynastrySession(userId: string, report: GeneratedReport, partner: ChartCalculation) {
+    try {
+      const { error: saveError } = await supabase.from("synastry_sessions").insert({
+        user_id: userId,
+        title: report.title,
+        person_a_name: chart.input.name,
+        person_b_name: partner.input.name,
+        chart_a: JSON.parse(JSON.stringify(chart)),
+        chart_b: JSON.parse(JSON.stringify(partner)),
+        synastry: JSON.parse(JSON.stringify(buildPartnerPayload(partner) ?? {})),
+        reports: JSON.parse(JSON.stringify([report])),
+      });
+      if (saveError) throw saveError;
+      toast.success("Saved to your relationship dashboard.");
+    } catch {
+      toast.error("The reading was generated but could not be saved to your dashboard.");
+    }
+  }
+
 
   function downloadReport(r: GeneratedReport) {
     const safe = r.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
@@ -200,7 +224,46 @@ export function ReportsPanel({ chart }: { chart: ChartCalculation }) {
             </Link>
           </>
         )}
+        <div className="mt-4">
+          <Link to="/dashboard" className="text-[11px] uppercase tracking-widest text-gold border border-gold/40 rounded-md px-4 py-2 hover:bg-gold/10 transition">
+            Saved relationship readings
+          </Link>
+        </div>
       </div>
+
+      <div className="glass rounded-xl border border-border/40 px-5 py-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="text-sm">
+          <p className="text-[10px] uppercase tracking-[0.3em] text-gold">Two-chart readings</p>
+          {partnerChart ? (
+            <p className="text-muted-foreground mt-1">
+              Second chart ready: <span className="text-foreground">{partnerChart.input.name}</span> ·{" "}
+              {partnerChart.input.date} · {partnerChart.input.place}
+            </p>
+          ) : (
+            <p className="text-muted-foreground mt-1">
+              Relationship reports stay locked until a second person&apos;s birth details are entered and their chart calculates successfully.
+            </p>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setPartnerPrompt({ reportId: "", title: "Relationship reading" })}
+            className="text-[11px] uppercase tracking-widest text-gold border border-gold/40 rounded-md px-4 py-2 hover:bg-gold/10 transition"
+          >
+            {partnerChart ? "Change second chart" : "Add second chart"}
+          </button>
+          {partnerChart && (
+            <button
+              onClick={() => setPartnerChart(null)}
+              className="text-[11px] uppercase tracking-widest text-muted-foreground border border-border/50 rounded-md px-4 py-2 hover:text-foreground transition"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      </div>
+
+
 
       {Object.entries(grouped).map(([category, items]) => (
         <div key={category}>
