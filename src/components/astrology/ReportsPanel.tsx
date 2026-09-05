@@ -140,6 +140,9 @@ export function ReportsPanel({ chart }: { chart: ChartCalculation }) {
       void notifyStarted({ data: { reportTitle: def?.title ?? reportId } }).catch(() => {});
       const result = await runReport({ data: { reportId, chart: chartPayload, partner: buildPartnerPayload(partnerChart) } });
       setReports((prev) => ({ ...prev, [reportId]: result }));
+      if (def?.requiresPartner && partnerChart) {
+        void saveSynastrySession(sessionData.session.user.id, result, partnerChart);
+      }
       if (isAdmin) toast.success("Admin access applied: this report was unlocked without purchase.");
       void notifyReady({ data: { reportTitle: result.title ?? def?.title ?? reportId } }).catch(() => {});
       requestAnimationFrame(() => {
@@ -155,6 +158,27 @@ export function ReportsPanel({ chart }: { chart: ChartCalculation }) {
       setLoadingId(null);
     }
   }
+
+  /** Persists a completed two-chart reading so it can be reopened from /dashboard. */
+  async function saveSynastrySession(userId: string, report: GeneratedReport, partner: ChartCalculation) {
+    try {
+      const { error: saveError } = await supabase.from("synastry_sessions").insert({
+        user_id: userId,
+        title: report.title,
+        person_a_name: chart.input.name,
+        person_b_name: partner.input.name,
+        chart_a: JSON.parse(JSON.stringify(chart)),
+        chart_b: JSON.parse(JSON.stringify(partner)),
+        synastry: JSON.parse(JSON.stringify(buildPartnerPayload(partner) ?? {})),
+        reports: JSON.parse(JSON.stringify([report])),
+      });
+      if (saveError) throw saveError;
+      toast.success("Saved to your relationship dashboard.");
+    } catch {
+      toast.error("The reading was generated but could not be saved to your dashboard.");
+    }
+  }
+
 
   function downloadReport(r: GeneratedReport) {
     const safe = r.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
