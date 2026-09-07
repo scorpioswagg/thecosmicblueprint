@@ -27,5 +27,5 @@ export const REPORTS: ReportDefinition[] = [
 ];
 
 export function getReport(id: string): ReportDefinition | undefined {
-  return REPORTS.find((r) => r.id === id);
+  return [...REPORTS].reverse().find((r) => r.id === id);
 }
