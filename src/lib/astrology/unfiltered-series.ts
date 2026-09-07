@@ -1,6 +1,6 @@
 import type { ReportDefinition } from "./reports-catalog";
 
-const UNIVERSAL_SYSTEM_FRAMING = 'Generate an intensely candid astrological interpretation based exclusively on calculated natal-chart data and the report\'s defined astrological rules.
+const UNIVERSAL_SYSTEM_FRAMING = `Generate an intensely candid astrological interpretation based exclusively on calculated natal-chart data and the report's defined astrological rules.
 
 This is astrology, not scientifically validated psychological diagnosis or factual mind-reading.
 
@@ -31,11 +31,11 @@ Look aggressively for contradictions. Strengths must be honest, including how ov
 Do not use generic horoscope filler. Earn recognition through specificity.
 
 End with a five-point "Brutal Truths" verdict, a transformation-oriented close, and the exact final message:
-"Your chart does not give you an excuse. It gives you a mirror."';
+"Your chart does not give you an excuse. It gives you a mirror."`;
 
-const UNIVERSAL_PROMPT = 'You are generating [REPORT NAME] in THE UNFILTERED SERIES.
+const UNIVERSAL_PROMPT = `You are generating [REPORT NAME] in THE UNFILTERED SERIES.
 
-Do not flatter the subject. Hold up an astrological mirror and describe what the calculated chart may reveal about the report\'s defined focus.
+Do not flatter the subject. Hold up an astrological mirror and describe what the calculated chart may reveal about the report's defined focus.
 
 Be fearless, direct, specific, psychologically compelling, and uncompromising without becoming cruel for entertainment. Every significant interpretation must be traceable to actual calculated chart data.
 
@@ -48,7 +48,7 @@ For every major difficult pattern use the exact seven-step treatment:
 2. Conventional symbolism.
 3. Healthier expression.
 4. Shadow expression.
-5. Possible real-world consequences within this report\'s focus.
+5. Possible real-world consequences within this report's focus.
 6. Uncomfortable question.
 7. Mature path forward.
 
@@ -56,7 +56,7 @@ Look aggressively for contradictions and explain both sides of them. Never turn 
 
 The report must contain exactly the 31 defined chapters, in the supplied order, using each chapter title verbatim. Do not add an extra generic Introduction, Strengths, Challenges, Summary, or Conclusion chapter. The final chapter itself contains the verdict and closing transformation message.
 
-Naturally use the exact quality terms Introduction, Strengths, Challenges, Reflection, Affirmations, Journal Prompts, Summary, and Conclusion somewhere within the 31 chapters where they genuinely fit; never create extra headings for them.\n\nTarget 4,800–5,200 words. Aim for approximately 5,000 words.';
+Naturally use the exact quality terms Introduction, Strengths, Challenges, Reflection, Affirmations, Journal Prompts, Summary, and Conclusion somewhere within the 31 chapters where they genuinely fit; never create extra headings for them.\n\nTarget 4,800–5,200 words. Aim for approximately 5,000 words.`;
 
 const brutalSections = ["Before We Get Brutal: How to Read This Report","The Person You Think You Are","The Person Other People Experience","The Mask You Wear","What You're Hiding From Yourself","Your Psychological Pressure Points","Your Darkest Personality Patterns","The Shadow Self","Your Favorite Defense Mechanisms","How You Sabotage Yourself","The Things You Do That Drive People Crazy","Control, Power & Ego","Jealousy, Possession & Insecurity","Love: The Fantasy vs. The Reality","How You Behave When You Want Someone","How You Behave When You Stop Wanting Someone","Conflict: Who You Become When You're Angry","Communication: What You Say vs. What People Hear","Your Relationship Red Flags","Your Friendship Red Flags","Your Accountability Problem","The Contradictions in Your Personality","The Lies You Might Tell Yourself","What You Blame on Other People","What Other People May Be Afraid to Tell You","Your Greatest Strengths—Without the Flattery","Where Your Darkness Becomes Power","What Happens If You Never Change","The Mature Version of You","The Brutal Truths You Actually Need","The Final Verdict: Your Cosmic Reality Check"] as string[];
 
