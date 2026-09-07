@@ -25,6 +25,7 @@ export const CATEGORY_COVERS: Record<string, string> = {
   "Signature Series": coverSignature,
   "Cosmic Frontier": coverFrontier,
   Synastry: coverSynastry,
+  "Unfiltered Series": coverSignature,
 };
 
 export function coverForCategory(category: string): string {
@@ -44,6 +45,7 @@ const CATEGORY_BASE_PRICE: Record<string, number> = {
   "Signature Series": 3900,
   "Cosmic Frontier": 8900,
   Synastry: 4900,
+  "Unfiltered Series": 9900,
 };
 
 /**
@@ -90,13 +92,13 @@ export function describeReport(def: ReportDefinition): string {
   return (
     `${def.tagline} ${chapters.length} chapters — including ${highlights} — are written from your exact Swiss Ephemeris placements: ` +
     `real degrees, houses and aspects rather than sun-sign generalities. About ${pages} pages, roughly a ${minutes}-minute read, ` +
-    `delivered instantly as a designed PDF with your natal wheel, aspect grid and timing charts included.${partner}${adult}${bestFor}`
+    `delivered instantly as a designed PDF with your natal wheel, aspect grid and timing charts included.\( {partner} \){adult}${bestFor}`
   );
 }
 
 /** Short one-line description for compact cards. */
 export function shortDescriptionFor(def: ReportDefinition): string {
-  return `${def.tagline} ${def.sections?.length ?? 0} chapters · ~${estimatedPagesFor(def)} pages · instant PDF.`;
+  return `${def.tagline} \( {def.sections?.length ?? 0} chapters · \~ \){estimatedPagesFor(def)} pages · instant PDF.`;
 }
 
 /** Highlight bullets shown on the report card. */
