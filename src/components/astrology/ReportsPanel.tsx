@@ -140,21 +140,51 @@ export function ReportsPanel({ chart }: { chart: ChartCalculation }) {
       void notifyStarted({ data: { reportTitle: def?.title ?? reportId } }).catch(() => {});
       const result = await runReport({ data: { reportId, chart: chartPayload, partner: buildPartnerPayload(partnerChart) } });
       setReports((prev) => ({ ...prev, [reportId]: result }));
+      if (def?.requiresPartner && partnerChart) {
+        void saveSynastrySession(sessionData.session.user.id, result, partnerChart);
+      }
       if (isAdmin) toast.success("Admin access applied: this report was unlocked without purchase.");
       void notifyReady({ data: { reportTitle: result.title ?? def?.title ?? reportId } }).catch(() => {});
       requestAnimationFrame(() => {
         document.getElementById(`report-${reportId}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
       });
     } catch (e) {
-      const message = (e as Error).message || "Report generation failed.";
-      setError(message);
-      if (message.startsWith("PAYMENT_REQUIRED:")) {
-        toast.error(isAdmin ? "Admin accounts should not see purchase prompts." : "This report requires purchase unless your account is an administrator.");
+      const raw = (e as Error).message || "Report generation failed.";
+      const isPayment = raw.startsWith("PAYMENT_REQUIRED");
+      if (isAdmin && isPayment) {
+        const adminMessage = "Your administrator access could not be confirmed for this request. Please try again — admin accounts never need to purchase a report.";
+        setError(adminMessage);
+        toast.error(adminMessage);
+      } else {
+        setError(raw);
+        if (isPayment) toast.error("This report requires purchase unless your account is an administrator.");
       }
     } finally {
       setLoadingId(null);
     }
+
   }
+
+  /** Persists a completed two-chart reading so it can be reopened from /dashboard. */
+  async function saveSynastrySession(userId: string, report: GeneratedReport, partner: ChartCalculation) {
+    try {
+      const { error: saveError } = await supabase.from("synastry_sessions").insert({
+        user_id: userId,
+        title: report.title,
+        person_a_name: chart.input.name,
+        person_b_name: partner.input.name,
+        chart_a: JSON.parse(JSON.stringify(chart)),
+        chart_b: JSON.parse(JSON.stringify(partner)),
+        synastry: JSON.parse(JSON.stringify(buildPartnerPayload(partner) ?? {})),
+        reports: JSON.parse(JSON.stringify([report])),
+      });
+      if (saveError) throw saveError;
+      toast.success("Saved to your relationship dashboard.");
+    } catch {
+      toast.error("The reading was generated but could not be saved to your dashboard.");
+    }
+  }
+
 
   function downloadReport(r: GeneratedReport) {
     const safe = r.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
@@ -193,9 +223,53 @@ export function ReportsPanel({ chart }: { chart: ChartCalculation }) {
           Each report is generated from your real Swiss Ephemeris chart data — no templates, no guesswork.
         </p>
         {isAdmin && (
-          <p className="mt-3 text-sm text-gold">Administrator access active — every report and PDF is free on this account.</p>
+          <>
+            <p className="mt-3 text-sm text-gold">Administrator access active — every report and PDF is free on this account.</p>
+            <Link to="/admin/reports" className="inline-block mt-3 text-[11px] uppercase tracking-widest text-gold border border-gold/50 rounded-md px-4 py-2 hover:bg-gold/10 transition">
+              Add or edit reports
+            </Link>
+          </>
         )}
+        <div className="mt-4">
+          <Link to="/dashboard" className="text-[11px] uppercase tracking-widest text-gold border border-gold/40 rounded-md px-4 py-2 hover:bg-gold/10 transition">
+            Saved relationship readings
+          </Link>
+        </div>
       </div>
+
+      <div className="glass rounded-xl border border-border/40 px-5 py-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="text-sm">
+          <p className="text-[10px] uppercase tracking-[0.3em] text-gold">Two-chart readings</p>
+          {partnerChart ? (
+            <p className="text-muted-foreground mt-1">
+              Second chart ready: <span className="text-foreground">{partnerChart.input.name}</span> ·{" "}
+              {partnerChart.input.date} · {partnerChart.input.place}
+            </p>
+          ) : (
+            <p className="text-muted-foreground mt-1">
+              Relationship reports stay locked until a second person&apos;s birth details are entered and their chart calculates successfully.
+            </p>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setPartnerPrompt({ reportId: "", title: "Relationship reading" })}
+            className="text-[11px] uppercase tracking-widest text-gold border border-gold/40 rounded-md px-4 py-2 hover:bg-gold/10 transition"
+          >
+            {partnerChart ? "Change second chart" : "Add second chart"}
+          </button>
+          {partnerChart && (
+            <button
+              onClick={() => setPartnerChart(null)}
+              className="text-[11px] uppercase tracking-widest text-muted-foreground border border-border/50 rounded-md px-4 py-2 hover:text-foreground transition"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      </div>
+
+
 
       {Object.entries(grouped).map(([category, items]) => (
         <div key={category}>
@@ -206,18 +280,40 @@ export function ReportsPanel({ chart }: { chart: ChartCalculation }) {
               const isDone = !!reports[r.id];
               const isActive = activeId === r.id;
               return (
-                <div key={r.id} className={`text-left glass rounded-xl p-5 border transition group flex flex-col ${isActive ? "border-gold/60 shadow-gold" : "border-border/40 hover:border-gold/40"}`}>
-                  <button onClick={() => generate(r.id)} disabled={isLoading} className="text-left flex-1">
-                    <div className="flex items-start justify-between mb-2">
-                      <span className="text-3xl text-gold">{r.icon}</span>
-                      <span className="text-[10px] uppercase tracking-widest text-muted-foreground">{isLoading ? "generating..." : isDone ? "ready" : accessLabel(r)}</span>
+                <div key={r.id} className={`text-left glass rounded-xl border overflow-hidden transition group flex flex-col ${isActive ? "border-gold/60 shadow-gold" : "border-border/40 hover:border-gold/40"}`}>
+                  <button onClick={() => generate(r.id)} disabled={isLoading} className="text-left flex-1 flex flex-col">
+                    {r.coverImageUrl && (
+                      <img
+                        src={r.coverImageUrl}
+                        alt={`${r.title} report cover`}
+                        loading="lazy"
+                        width={1024}
+                        height={640}
+                        className="w-full h-32 object-cover"
+                      />
+                    )}
+                    <div className="p-5 flex-1 flex flex-col">
+                      <div className="flex items-start justify-between mb-2">
+                        <span className="text-3xl text-gold">{r.icon}</span>
+                        <span className="text-[10px] uppercase tracking-widest text-muted-foreground">{isLoading ? "generating..." : isDone ? "ready" : accessLabel(r)}</span>
+                      </div>
+                      <h4 className="font-display text-lg text-foreground">{r.title}</h4>
+                      <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed line-clamp-4">{r.description ?? r.tagline}</p>
+                      {r.features.length > 0 && (
+                        <ul className="mt-3 space-y-1">
+                          {r.features.map((f) => (
+                            <li key={f} className="text-[11px] text-muted-foreground/90 flex gap-2">
+                              <span className="text-gold">·</span>
+                              <span>{f}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      <p className="text-[11px] text-gold mt-3">{isAdmin ? "Free for admins - no purchase required" : r.accessMode === "paid" ? "Purchase required for non-admin accounts" : r.accessMode === "admin-only" ? "Administrator access required" : "Available without purchase"}</p>
                     </div>
-                    <h4 className="font-display text-lg text-foreground">{r.title}</h4>
-                    <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">{r.tagline}</p>
-                    <p className="text-[11px] text-gold mt-3">{isAdmin ? "Free for admins - no purchase required" : r.accessMode === "paid" ? "Purchase required for non-admin accounts" : r.accessMode === "admin-only" ? "Administrator access required" : "Available without purchase"}</p>
                   </button>
                   {isDone && (
-                    <div className="mt-3 grid grid-cols-3 gap-2">
+                    <div className="px-5 pb-5 grid grid-cols-3 gap-2">
                       <button onClick={(e) => { e.stopPropagation(); openPreview(reports[r.id]); }} className="text-[11px] uppercase tracking-widest text-gold border border-gold/40 rounded-md py-1.5 hover:bg-gold/10 transition">Preview</button>
                       <button onClick={(e) => { e.stopPropagation(); downloadReport(reports[r.id]); }} className="text-[11px] uppercase tracking-widest text-gold border border-gold/40 rounded-md py-1.5 hover:bg-gold/10 transition">.md</button>
                       <button onClick={(e) => { e.stopPropagation(); downloadReportPdf(reports[r.id]); }} className="text-[11px] uppercase tracking-widest text-gold border border-gold/40 rounded-md py-1.5 hover:bg-gold/10 transition">PDF</button>

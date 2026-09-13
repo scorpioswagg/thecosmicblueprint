@@ -29,13 +29,17 @@ export const generateAstroReport = createServerFn({ method: "POST" })
     );
     if (!report) throw new Error(`Unknown report: ${data.reportId}`);
 
-    // Single early admin bypass: admins get every report free — no purchase,
-    // inactive, admin-only, or 18+ consent gate applies.
-    const { data: isAdmin, error: roleError } = await context.supabase.rpc("has_role", {
+    // Single early admin bypass: admins get every report free.
+    // Truthiness must match the client's `!!data` check so the two never disagree.
+    const { data: roleData, error: roleError } = await context.supabase.rpc("has_role", {
       _user_id: context.userId,
       _role: "admin",
     });
-    if (roleError) throw new Error(roleError.message);
+    if (roleError) {
+      console.error("[generateAstroReport] has_role failed", roleError);
+    }
+    const isAdmin = Boolean(roleData);
+
 
     if (report.requiresPartner && !data.partner) {
       throw new Error("PARTNER_REQUIRED: Add the second person's birth details to generate this synastry report.");
@@ -46,7 +50,6 @@ export const generateAstroReport = createServerFn({ method: "POST" })
     }
 
     if (!report.isActive) throw new Error("REPORT_INACTIVE: This report is not currently available.");
-
 
     if (report.accessMode === "admin-only") {
       throw new Error("ADMIN_REQUIRED: This report is free for administrators and unavailable to non-admin accounts.");

@@ -2141,7 +2141,6 @@ Tone: practical, elegant, and deeply personalized.`,
     systemFraming: r.tagline,
     promptModule: r.module,
   })),
-,
 
   {
     id: "brutal-blueprint",
