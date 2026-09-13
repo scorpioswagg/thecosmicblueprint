@@ -1,0 +1,37 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { createClient } from "@supabase/supabase-js";
+import { buildLuxuryReportPdfBytes, type GeneratedReport } from "@/lib/astrology/luxury-pdf";
+import type { ChartCalculation } from "@/lib/astrology/types";
+import { verifyReportDownloadToken } from "@/lib/payments/download-token.server";
+
+function adminDb() {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) throw new Error("Supabase server credentials are not configured");
+  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+}
+
+export const Route = createFileRoute("/api/reports/download")({
+  server: { handlers: { GET: async ({ request }) => {
+    try {
+      const token = new URL(request.url).searchParams.get("token");
+      const verified = token ? verifyReportDownloadToken(token) : null;
+      if (!verified) return new Response("Invalid or expired download link", { status: 401 });
+      const db = adminDb();
+      const { data: delivery, error } = await (db as any).from("report_deliveries").select("user_id,report_id,report_title,report_markdown,chart_data,is_free").eq("user_id", verified.userId).eq("report_id", verified.reportId).maybeSingle();
+      if (error) return new Response("Unable to load report", { status: 500 });
+      if (!delivery) return new Response("Report not found", { status: 404 });
+      if (!delivery.is_free) {
+        const { data: purchase } = await (db as any).from("report_purchases").select("id").eq("user_id", verified.userId).eq("report_id", verified.reportId).eq("status", "paid").limit(1).maybeSingle();
+        if (!purchase) return new Response("Purchase is no longer active", { status: 403 });
+      }
+      const report: GeneratedReport = { reportId: delivery.report_id, title: delivery.report_title, markdown: delivery.report_markdown, generatedAt: new Date().toISOString() };
+      const bytes = buildLuxuryReportPdfBytes(report, delivery.chart_data as ChartCalculation);
+      const safe = delivery.report_title.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase() || "cosmic-blueprint-report";
+      return new Response(bytes as unknown as BodyInit, { status: 200, headers: { "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename="${safe}.pdf"`, "Cache-Control": "private, no-store, max-age=0", "X-Content-Type-Options": "nosniff" } });
+    } catch (error) {
+      console.error("[report-download] failed", error);
+      return new Response("Download failed", { status: 500 });
+    }
+  } } }
+});
