@@ -126,4 +126,7 @@ export const UNFILTERED_SERIES_REPORTS: ReportDefinition[] = [
     systemFraming: UNIVERSAL_SYSTEM_FRAMING,
     promptModule: makePrompt("THE AMBITION AUTOPSY™", "Drive, work, money, ambition, procrastination, perfectionism, entitlement versus confidence, avoidance, envy, comparison, quitting patterns, status, self-image, and the mature path to consistent output.", ambitionSections),
   },
+  ...EXPANDED_UNFILTERED,
+  ...UNFILTERED_SYNASTRY,
 ];
+
