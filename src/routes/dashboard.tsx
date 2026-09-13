@@ -1,10 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { ChartCalculation } from "@/lib/astrology/types";
 import { downloadSynastryPdf } from "@/lib/astrology/synastry-pdf";
+import { calculateSynastryAspects } from "@/lib/astrology/synastry";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
@@ -150,6 +151,63 @@ function DashboardPage() {
             );
           })}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function bodyOf(chart: ChartCalculation, name: string) {
+  return chart?.bodies?.find((b) => b.name === name);
+}
+
+function ChartSummary({ label, chart }: { label: string; chart: ChartCalculation }) {
+  const sun = bodyOf(chart, "Sun");
+  const moon = bodyOf(chart, "Moon");
+  const asc = bodyOf(chart, "Ascendant");
+  const rows: Array<[string, string]> = [
+    ["Sun", sun ? `${sun.sign} ${sun.signDegree.toFixed(1)}°` : "—"],
+    ["Moon", moon ? `${moon.sign} ${moon.signDegree.toFixed(1)}°` : "—"],
+    ["Ascendant", chart?.input?.timeUnknown ? "Unknown birth time" : asc ? `${asc.sign} ${asc.signDegree.toFixed(1)}°` : "—"],
+  ];
+  return (
+    <div className="glass rounded-xl border border-border/40 p-5">
+      <p className="text-[10px] uppercase tracking-[0.3em] text-gold">{label}</p>
+      <p className="text-xs text-muted-foreground mt-1">
+        {chart?.input?.date} · {chart?.input?.timeUnknown ? "time unknown" : chart?.input?.time} · {chart?.input?.place}
+      </p>
+      <dl className="mt-3 space-y-1">
+        {rows.map(([k, v]) => (
+          <div key={k} className="flex justify-between text-sm">
+            <dt className="text-muted-foreground">{k}</dt>
+            <dd className="text-foreground font-mono text-xs">{v}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
+
+function SynastryAspects({ chartA, chartB }: { chartA: ChartCalculation; chartB: ChartCalculation }) {
+  const aspects = useMemo(() => {
+    try {
+      return calculateSynastryAspects(chartA, chartB).slice(0, 24);
+    } catch {
+      return [];
+    }
+  }, [chartA, chartB]);
+
+  if (aspects.length === 0) return null;
+
+  return (
+    <div>
+      <h3 className="text-[10px] uppercase tracking-[0.3em] text-gold mb-3">Cross-chart aspects</h3>
+      <div className="grid sm:grid-cols-2 gap-x-6 gap-y-1">
+        {aspects.map((a, i) => (
+          <div key={`${a.a}-${a.b}-${a.type}-${i}`} className="flex justify-between text-xs border-b border-border/20 py-1">
+            <span className="text-foreground">{a.a} {a.type} {a.b}</span>
+            <span className="text-muted-foreground font-mono">{a.orb.toFixed(1)}°</span>
+          </div>
+        ))}
       </div>
     </div>
   );
