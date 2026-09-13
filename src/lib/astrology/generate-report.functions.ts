@@ -30,12 +30,16 @@ export const generateAstroReport = createServerFn({ method: "POST" })
     if (!report) throw new Error(`Unknown report: ${data.reportId}`);
 
     // Single early admin bypass: admins get every report free.
+    // Truthiness must match the client's `!!data` check so the two never disagree.
     const { data: roleData, error: roleError } = await context.supabase.rpc("has_role", {
       _user_id: context.userId,
       _role: "admin",
     });
-    if (roleError) throw new Error(`ROLE_CHECK_FAILED: ${roleError.message}`);
-    const isAdmin = roleData === true || roleData === "true" || roleData === 1;
+    if (roleError) {
+      console.error("[generateAstroReport] has_role failed", roleError);
+    }
+    const isAdmin = Boolean(roleData);
+
 
     if (report.requiresPartner && !data.partner) {
       throw new Error("PARTNER_REQUIRED: Add the second person's birth details to generate this synastry report.");
