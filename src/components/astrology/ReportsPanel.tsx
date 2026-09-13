@@ -152,7 +152,7 @@ export function ReportsPanel({ chart }: { chart: ChartCalculation }) {
       const raw = (e as Error).message || "Report generation failed.";
       const isPayment = raw.startsWith("PAYMENT_REQUIRED");
       if (isAdmin && isPayment) {
-        const adminMessage = "Your administrator access could not be confirmed for this request. Please try again — admin accounts never need to purchase a report.";
+        const adminMessage = "Admin role check failed on server; try again";
         setError(adminMessage);
         toast.error(adminMessage);
       } else {
