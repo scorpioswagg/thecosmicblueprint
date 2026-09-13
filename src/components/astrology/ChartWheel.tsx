@@ -1,8 +1,6 @@
-import { useEffect } from "react";
 import type { ChartCalculation, BodyName } from "@/lib/astrology/types";
 import { BODY_GLYPHS, ZODIAC_GLYPHS, ZODIAC_SIGNS, ELEMENT_OF } from "@/lib/astrology/types";
 import { normalizeDeg } from "@/lib/astrology/zodiac";
-import { supabase } from "@/integrations/supabase/client";
 
 interface Props { chart: ChartCalculation; size?: number; }
 
@@ -14,22 +12,6 @@ const MAJOR = new Set(["Conjunction","Opposition","Square","Trine","Sextile"]);
 const VISIBLE_BODIES: BodyName[] = ["Sun","Moon","Mercury","Venus","Mars","Jupiter","Saturn","Uranus","Neptune","Pluto","Chiron","North Node"];
 
 export function ChartWheel({ chart, size = 560 }: Props) {
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const { data: user } = await supabase.auth.getUser();
-        if (!user.user || user.user.is_anonymous || cancelled) return;
-        await (supabase as any).from("natal_charts").upsert({
-          user_id: user.user.id, name: chart.input.name, birth_date: chart.input.date,
-          birth_time: chart.input.time, birth_place: chart.input.place, chart_data: chart,
-          calculated_at: chart.engine.calculatedAt, updated_at: new Date().toISOString(),
-        }, { onConflict: "user_id" });
-      } catch (error) { console.warn("[chart] dashboard save failed", error); }
-    })();
-    return () => { cancelled = true; };
-  }, [chart]);
-
   const cx = size / 2, cy = size / 2;
   const rOuter = size * 0.48, rZodiacInner = size * 0.40, rHouseInner = size * 0.30, rPlanet = size * 0.345, rAspectInner = size * 0.295;
   const timeUnknown = chart.input.timeUnknown === true;
@@ -41,7 +23,6 @@ export function ChartWheel({ chart, size = 560 }: Props) {
   const sortedByLon = [...bodyList].sort((a, b) => a.longitude - b.longitude);
   let lastAngle = -1000;
   for (const b of sortedByLon) { let angle = toAngle(b.longitude); if (Math.abs(angle - lastAngle) < 7) angle = lastAngle + 7; placed.push({ name: b.name, angle, lon: b.longitude }); lastAngle = angle; }
-
   return (
     <svg viewBox={`0 0 ${size} ${size}`} className="w-full h-auto">
       <defs><radialGradient id="bg" cx="50%" cy="50%" r="50%"><stop offset="0%" stopColor="oklch(0.20 0.06 280)"/><stop offset="100%" stopColor="oklch(0.12 0.04 280)"/></radialGradient></defs>
