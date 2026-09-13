@@ -38,8 +38,7 @@ export const generateAstroReport = createServerFn({ method: "POST" })
     if (roleError) {
       console.error("[generateAstroReport] has_role failed", roleError);
     }
-    const isAdmin = Boolean(roleData);
-
+    const isAdmin = !!roleData;
 
     if (report.requiresPartner && !data.partner) {
       throw new Error("PARTNER_REQUIRED: Add the second person's birth details to generate this synastry report.");
