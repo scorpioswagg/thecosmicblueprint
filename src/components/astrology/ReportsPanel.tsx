@@ -149,14 +149,20 @@ export function ReportsPanel({ chart }: { chart: ChartCalculation }) {
         document.getElementById(`report-${reportId}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
       });
     } catch (e) {
-      const message = (e as Error).message || "Report generation failed.";
-      setError(message);
-      if (message.startsWith("PAYMENT_REQUIRED:")) {
-        toast.error(isAdmin ? "Admin accounts should not see purchase prompts." : "This report requires purchase unless your account is an administrator.");
+      const raw = (e as Error).message || "Report generation failed.";
+      const isPayment = raw.startsWith("PAYMENT_REQUIRED");
+      if (isAdmin && isPayment) {
+        const adminMessage = "Your administrator access could not be confirmed for this request. Please try again — admin accounts never need to purchase a report.";
+        setError(adminMessage);
+        toast.error(adminMessage);
+      } else {
+        setError(raw);
+        if (isPayment) toast.error("This report requires purchase unless your account is an administrator.");
       }
     } finally {
       setLoadingId(null);
     }
+
   }
 
   /** Persists a completed two-chart reading so it can be reopened from /dashboard. */
