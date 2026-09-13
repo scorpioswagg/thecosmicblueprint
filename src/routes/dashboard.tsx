@@ -129,11 +129,23 @@ function DashboardPage() {
                     </button>
                   </div>
                 </div>
-                {open && report && (
-                  <div className="px-6 pb-8 prose-cosmic border-t border-border/40 pt-6">
-                    <ReactMarkdown>{report.markdown}</ReactMarkdown>
+                {open && (
+                  <div className="px-6 pb-8 border-t border-border/40 pt-6 space-y-8">
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <ChartSummary label={row.person_a_name} chart={row.chart_a} />
+                      <ChartSummary label={row.person_b_name} chart={row.chart_b} />
+                    </div>
+                    <SynastryAspects chartA={row.chart_a} chartB={row.chart_b} />
+                    {report ? (
+                      <div className="prose-cosmic">
+                        <ReactMarkdown>{report.markdown}</ReactMarkdown>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">This saved reading has no report text stored.</p>
+                    )}
                   </div>
                 )}
+
               </article>
             );
           })}
