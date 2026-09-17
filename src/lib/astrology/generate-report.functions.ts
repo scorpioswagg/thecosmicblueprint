@@ -38,7 +38,23 @@ export const generateAstroReport = createServerFn({ method: "POST" })
     if (roleError) {
       console.error("[generateAstroReport] has_role failed", roleError);
     }
-    const isAdmin = !!roleData;
+
+    // Fallback: if the RPC failed or returned nothing, read the role row directly.
+    let directAdmin = false;
+    if (!roleData) {
+      const { data: roleRow, error: roleRowError } = await context.supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", context.userId)
+        .eq("role", "admin")
+        .limit(1)
+        .maybeSingle();
+      if (roleRowError) console.error("[generateAstroReport] user_roles lookup failed", roleRowError);
+      directAdmin = !!roleRow;
+    }
+
+    const isAdmin = !!roleData || directAdmin;
+    console.log("[generateAstroReport] access", { userId: context.userId, roleData, directAdmin, isAdmin });
 
     if (report.requiresPartner && !data.partner) {
       throw new Error("PARTNER_REQUIRED: Add the second person's birth details to generate this synastry report.");
