@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { mergeCatalog, CATALOG_SELECT, type CatalogRow } from "./catalog";
 import { generateReportMarkdown } from "./generate-report-core.server";
+import { resolveIsAdmin } from "@/lib/auth/is-admin.server";
 
 const BodySchema = z.object({ name: z.string(), longitude: z.number(), sign: z.string(), signDegree: z.number(), house: z.number().optional(), retrograde: z.boolean(), speed: z.number() });
 const AspectSchema = z.object({ a: z.string(), b: z.string(), type: z.string(), angle: z.number(), orb: z.number(), applying: z.boolean() });
