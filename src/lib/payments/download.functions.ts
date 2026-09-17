@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { createReportDownloadToken } from "./download-token.server";
+import { resolveIsAdmin } from "@/lib/auth/is-admin.server";
 
 const InputSchema = z.object({ reportId: z.string().min(1).max(120) });
 
