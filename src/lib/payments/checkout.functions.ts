@@ -39,10 +39,14 @@ export const createReportCheckout = createServerFn({ method: "POST" })
     if (!row.is_active) throw new Error("This report is not currently available.");
 
     const amountCents = row.sale_price_cents ?? row.price_cents;
-    if (amountCents <= 0 || row.accessMode === "free") {
+    const accessMode = normalizeAccessMode(
+      (row.metadata as Record<string, unknown> | null)?.["access_mode"],
+      amountCents ?? 0,
+    );
+    if (amountCents <= 0 || accessMode === "free") {
       throw new Error("This report is free and does not need checkout.");
     }
-    if (row.accessMode === "admin-only") {
+    if (accessMode === "admin-only") {
       throw new Error("This report is available only to administrators.");
     }
 
