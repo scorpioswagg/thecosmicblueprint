@@ -3,6 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { CATALOG_SELECT, type CatalogRow } from "@/lib/astrology/catalog";
+import { resolveIsAdmin } from "@/lib/auth/is-admin.server";
 
 const CheckoutSchema = z.object({ reportId: z.string().min(1).max(80) });
 
