@@ -191,7 +191,7 @@ export const createAdminPaymentRequest = createServerFn({ method: "POST" })
     const product = await findOrCreateProduct(stripe, row);
     const price = await syncPrice(stripe, product, row);
 
-    const { data: usersData, error: usersError } = await stripeCustomerUserLookup(db, data.customerEmail);
+    const { usersData, usersError } = await stripeCustomerUserLookup(db, data.customerEmail);
     if (usersError) throw new Error(usersError);
     if (!usersData) {
       throw new Error("No Cosmic Blueprint account exists for that email. Have the customer create/sign into an account first.");
