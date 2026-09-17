@@ -11,16 +11,21 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AcademyRouteImport } from './routes/academy'
+import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as DemoRouteImport } from './routes/demo'
 import { Route as McpRouteImport } from './routes/mcp'
+import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as AdminEmailsRouteImport } from './routes/admin.emails'
+import { Route as AdminPaymentRequestRouteImport } from './routes/admin.payment-request'
 import { Route as AdminPricesRouteImport } from './routes/admin.prices'
 import { Route as AdminReportsRouteImport } from './routes/admin.reports'
 import { Route as ApiSendReportRouteImport } from './routes/api/send-report'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
+import { Route as ApiReportsDownloadRouteImport } from './routes/api/reports/download'
 import { Route as ApiWebhooksResendRouteImport } from './routes/api/webhooks/resend'
 import { Route as ApiWebhooksStripeRouteImport } from './routes/api/webhooks/stripe'
 
@@ -34,14 +39,29 @@ const AcademyRoute = AcademyRouteImport.update({
   path: '/academy',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CheckoutRoute = CheckoutRouteImport.update({
+  id: '/checkout',
+  path: '/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DemoRoute = DemoRouteImport.update({
+  id: '/demo',
+  path: '/demo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const McpRoute = McpRouteImport.update({
   id: '/mcp',
   path: '/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportsRoute = ReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
   getParentRoute: () => rootRouteImport,
 } as any)
 const Char91DotmcpChar93ListToolsRoute =
@@ -59,6 +79,11 @@ const Char91DotwellKnownChar93OauthProtectedResourceRoute =
 const AdminEmailsRoute = AdminEmailsRouteImport.update({
   id: '/admin/emails',
   path: '/admin/emails',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminPaymentRequestRoute = AdminPaymentRequestRouteImport.update({
+  id: '/admin/payment-request',
+  path: '/admin/payment-request',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminPricesRoute = AdminPricesRouteImport.update({
@@ -87,6 +112,11 @@ const Char91DotmcpChar93InvokeToolToolRoute =
     path: '/.mcp/invoke-tool/$tool',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiReportsDownloadRoute = ApiReportsDownloadRouteImport.update({
+  id: '/api/reports/download',
+  path: '/api/reports/download',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiWebhooksResendRoute = ApiWebhooksResendRouteImport.update({
   id: '/api/webhooks/resend',
   path: '/api/webhooks/resend',
@@ -101,32 +131,42 @@ const ApiWebhooksStripeRoute = ApiWebhooksStripeRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/academy': typeof AcademyRoute
+  '/checkout': typeof CheckoutRoute
   '/dashboard': typeof DashboardRoute
+  '/demo': typeof DemoRoute
   '/mcp': typeof McpRoute
+  '/reports': typeof ReportsRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin/emails': typeof AdminEmailsRoute
+  '/admin/payment-request': typeof AdminPaymentRequestRoute
   '/admin/prices': typeof AdminPricesRoute
   '/admin/reports': typeof AdminReportsRoute
   '/api/send-report': typeof ApiSendReportRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/api/reports/download': typeof ApiReportsDownloadRoute
   '/api/webhooks/resend': typeof ApiWebhooksResendRoute
   '/api/webhooks/stripe': typeof ApiWebhooksStripeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/academy': typeof AcademyRoute
+  '/checkout': typeof CheckoutRoute
   '/dashboard': typeof DashboardRoute
+  '/demo': typeof DemoRoute
   '/mcp': typeof McpRoute
+  '/reports': typeof ReportsRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin/emails': typeof AdminEmailsRoute
+  '/admin/payment-request': typeof AdminPaymentRequestRoute
   '/admin/prices': typeof AdminPricesRoute
   '/admin/reports': typeof AdminReportsRoute
   '/api/send-report': typeof ApiSendReportRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/api/reports/download': typeof ApiReportsDownloadRoute
   '/api/webhooks/resend': typeof ApiWebhooksResendRoute
   '/api/webhooks/stripe': typeof ApiWebhooksStripeRoute
 }
@@ -134,16 +174,21 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/academy': typeof AcademyRoute
+  '/checkout': typeof CheckoutRoute
   '/dashboard': typeof DashboardRoute
+  '/demo': typeof DemoRoute
   '/mcp': typeof McpRoute
+  '/reports': typeof ReportsRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin/emails': typeof AdminEmailsRoute
+  '/admin/payment-request': typeof AdminPaymentRequestRoute
   '/admin/prices': typeof AdminPricesRoute
   '/admin/reports': typeof AdminReportsRoute
   '/api/send-report': typeof ApiSendReportRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/api/reports/download': typeof ApiReportsDownloadRoute
   '/api/webhooks/resend': typeof ApiWebhooksResendRoute
   '/api/webhooks/stripe': typeof ApiWebhooksStripeRoute
 }
@@ -152,48 +197,63 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/academy'
+    | '/checkout'
     | '/dashboard'
+    | '/demo'
     | '/mcp'
+    | '/reports'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/admin/emails'
+    | '/admin/payment-request'
     | '/admin/prices'
     | '/admin/reports'
     | '/api/send-report'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/api/reports/download'
     | '/api/webhooks/resend'
     | '/api/webhooks/stripe'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/academy'
+    | '/checkout'
     | '/dashboard'
+    | '/demo'
     | '/mcp'
+    | '/reports'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/admin/emails'
+    | '/admin/payment-request'
     | '/admin/prices'
     | '/admin/reports'
     | '/api/send-report'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/api/reports/download'
     | '/api/webhooks/resend'
     | '/api/webhooks/stripe'
   id:
     | '__root__'
     | '/'
     | '/academy'
+    | '/checkout'
     | '/dashboard'
+    | '/demo'
     | '/mcp'
+    | '/reports'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/admin/emails'
+    | '/admin/payment-request'
     | '/admin/prices'
     | '/admin/reports'
     | '/api/send-report'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/api/reports/download'
     | '/api/webhooks/resend'
     | '/api/webhooks/stripe'
   fileRoutesById: FileRoutesById
@@ -201,16 +261,21 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AcademyRoute: typeof AcademyRoute
+  CheckoutRoute: typeof CheckoutRoute
   DashboardRoute: typeof DashboardRoute
+  DemoRoute: typeof DemoRoute
   McpRoute: typeof McpRoute
+  ReportsRoute: typeof ReportsRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   AdminEmailsRoute: typeof AdminEmailsRoute
+  AdminPaymentRequestRoute: typeof AdminPaymentRequestRoute
   AdminPricesRoute: typeof AdminPricesRoute
   AdminReportsRoute: typeof AdminReportsRoute
   ApiSendReportRoute: typeof ApiSendReportRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
+  ApiReportsDownloadRoute: typeof ApiReportsDownloadRoute
   ApiWebhooksResendRoute: typeof ApiWebhooksResendRoute
   ApiWebhooksStripeRoute: typeof ApiWebhooksStripeRoute
 }
@@ -231,6 +296,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AcademyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/checkout': {
+      id: '/checkout'
+      path: '/checkout'
+      fullPath: '/checkout'
+      preLoaderRoute: typeof CheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
@@ -238,11 +310,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/demo': {
+      id: '/demo'
+      path: '/demo'
+      fullPath: '/demo'
+      preLoaderRoute: typeof DemoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/mcp': {
       id: '/mcp'
       path: '/mcp'
       fullPath: '/mcp'
       preLoaderRoute: typeof McpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reports': {
+      id: '/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof ReportsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/.mcp/list-tools': {
@@ -264,6 +350,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/emails'
       fullPath: '/admin/emails'
       preLoaderRoute: typeof AdminEmailsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/payment-request': {
+      id: '/admin/payment-request'
+      path: '/admin/payment-request'
+      fullPath: '/admin/payment-request'
+      preLoaderRoute: typeof AdminPaymentRequestRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/prices': {
@@ -301,6 +394,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/reports/download': {
+      id: '/api/reports/download'
+      path: '/api/reports/download'
+      fullPath: '/api/reports/download'
+      preLoaderRoute: typeof ApiReportsDownloadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/webhooks/resend': {
       id: '/api/webhooks/resend'
       path: '/api/webhooks/resend'
@@ -321,17 +421,22 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AcademyRoute: AcademyRoute,
+  CheckoutRoute: CheckoutRoute,
   DashboardRoute: DashboardRoute,
+  DemoRoute: DemoRoute,
   McpRoute: McpRoute,
+  ReportsRoute: ReportsRoute,
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   AdminEmailsRoute: AdminEmailsRoute,
+  AdminPaymentRequestRoute: AdminPaymentRequestRoute,
   AdminPricesRoute: AdminPricesRoute,
   AdminReportsRoute: AdminReportsRoute,
   ApiSendReportRoute: ApiSendReportRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
+  ApiReportsDownloadRoute: ApiReportsDownloadRoute,
   ApiWebhooksResendRoute: ApiWebhooksResendRoute,
   ApiWebhooksStripeRoute: ApiWebhooksStripeRoute,
 }

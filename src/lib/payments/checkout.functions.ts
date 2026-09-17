@@ -3,6 +3,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { CATALOG_SELECT, type CatalogRow } from "@/lib/astrology/catalog";
+import { resolveIsAdmin } from "@/lib/auth/is-admin.server";
+import { normalizeAccessMode } from "@/lib/astrology/report-access";
 
 const CheckoutSchema = z.object({ reportId: z.string().min(1).max(80) });
 
@@ -20,12 +22,8 @@ export const createReportCheckout = createServerFn({ method: "POST" })
       throw new Error("Please sign in before purchasing a report.");
     }
 
-    const { data: adminRole, error: roleError } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
-    if (roleError) throw new Error(roleError.message);
-    if (Boolean(adminRole)) {
+    // Admins never pay for any report — now or in the future.
+    if (await resolveIsAdmin(context.supabase, context.userId, "createReportCheckout")) {
       throw new Error("ADMIN_FREE: Administrator accounts never need to purchase reports.");
     }
 
@@ -42,10 +40,14 @@ export const createReportCheckout = createServerFn({ method: "POST" })
     if (!row.is_active) throw new Error("This report is not currently available.");
 
     const amountCents = row.sale_price_cents ?? row.price_cents;
-    if (amountCents <= 0 || row.accessMode === "free") {
+    const accessMode = normalizeAccessMode(
+      (row.metadata as Record<string, unknown> | null)?.["access_mode"],
+      amountCents ?? 0,
+    );
+    if (amountCents <= 0 || accessMode === "free") {
       throw new Error("This report is free and does not need checkout.");
     }
-    if (row.accessMode === "admin-only") {
+    if (accessMode === "admin-only") {
       throw new Error("This report is available only to administrators.");
     }
 

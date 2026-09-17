@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { createReportDownloadToken } from "./download-token.server";
+import { resolveIsAdmin } from "@/lib/auth/is-admin.server";
 
 const InputSchema = z.object({ reportId: z.string().min(1).max(120) });
 
@@ -9,8 +10,8 @@ export const createReportDownload = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => InputSchema.parse(data))
   .handler(async ({ data, context }) => {
-    const { data: isAdmin, error: roleError } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
-    if (roleError) throw new Error(roleError.message);
+    // Admins download every report free, forever — never blocked by a role-check error.
+    const isAdmin = await resolveIsAdmin(context.supabase, context.userId, "createReportDownload");
     if (!isAdmin) {
       const { data: purchase, error } = await context.supabase.from("report_purchases").select("id").eq("user_id", context.userId).eq("report_id", data.reportId).eq("status", "paid").limit(1).maybeSingle();
       if (error) throw new Error(error.message);

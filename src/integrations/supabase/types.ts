@@ -287,6 +287,42 @@ export type Database = {
         }
         Relationships: []
       }
+      report_deliveries: {
+        Row: {
+          chart_data: Json | null
+          created_at: string
+          id: string
+          is_free: boolean
+          report_id: string
+          report_markdown: string
+          report_title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          chart_data?: Json | null
+          created_at?: string
+          id?: string
+          is_free?: boolean
+          report_id: string
+          report_markdown: string
+          report_title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          chart_data?: Json | null
+          created_at?: string
+          id?: string
+          is_free?: boolean
+          report_id?: string
+          report_markdown?: string
+          report_title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       report_prices: {
         Row: {
           created_at: string
