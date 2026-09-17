@@ -29,32 +29,11 @@ export const generateAstroReport = createServerFn({ method: "POST" })
     );
     if (!report) throw new Error(`Unknown report: ${data.reportId}`);
 
-    // Single early admin bypass: admins get every report free.
-    // Truthiness must match the client's `!!data` check so the two never disagree.
-    const { data: roleData, error: roleError } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
-    if (roleError) {
-      console.error("[generateAstroReport] has_role failed", roleError);
-    }
-
-    // Fallback: if the RPC failed or returned nothing, read the role row directly.
-    let directAdmin = false;
-    if (!roleData) {
-      const { data: roleRow, error: roleRowError } = await context.supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", context.userId)
-        .eq("role", "admin")
-        .limit(1)
-        .maybeSingle();
-      if (roleRowError) console.error("[generateAstroReport] user_roles lookup failed", roleRowError);
-      directAdmin = !!roleRow;
-    }
-
-    const isAdmin = !!roleData || directAdmin;
-    console.log("[generateAstroReport] access", { userId: context.userId, roleData, directAdmin, isAdmin });
+    // Single early admin bypass: admins get EVERY report free, forever, including
+    // every report added in the future. Never throws — a role-check failure must
+    // never turn an admin into a paying customer.
+    const isAdmin = await resolveIsAdmin(context.supabase, context.userId, "generateAstroReport");
+    console.log("[generateAstroReport] access", { userId: context.userId, reportId: report.id, isAdmin });
 
     if (report.requiresPartner && !data.partner) {
       throw new Error("PARTNER_REQUIRED: Add the second person's birth details to generate this synastry report.");
