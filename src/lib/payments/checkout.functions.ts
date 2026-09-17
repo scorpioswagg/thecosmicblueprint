@@ -20,12 +20,8 @@ export const createReportCheckout = createServerFn({ method: "POST" })
       throw new Error("Please sign in before purchasing a report.");
     }
 
-    const { data: adminRole, error: roleError } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
-    if (roleError) throw new Error(roleError.message);
-    if (Boolean(adminRole)) {
+    // Admins never pay for any report — now or in the future.
+    if (await resolveIsAdmin(context.supabase, context.userId, "createReportCheckout")) {
       throw new Error("ADMIN_FREE: Administrator accounts never need to purchase reports.");
     }
 
