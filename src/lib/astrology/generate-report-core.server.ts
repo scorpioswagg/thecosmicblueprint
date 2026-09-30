@@ -1,5 +1,5 @@
 import { generateText } from "ai";
-import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
+import { resolveWritingModel } from "@/lib/ai-gateway.server";
 import { REPORTS } from "./reports-catalog";
 import { mergeCatalog, CATALOG_SELECT, type CatalogRow, type CatalogEntry } from "./catalog";
 import { runReportQa, type QaIssue } from "./report-qa.server";
@@ -73,44 +73,14 @@ function chartToPrompt(chart: ReportChartInput, timeUnknown: boolean) {
     .join("\n");
 
   if (timeUnknown) {
-    return `BIRTH:
-- Name: ${chart.input.name}
-- Date: ${chart.input.date} (BIRTH TIME UNKNOWN)
-- Place: ${chart.input.place} (${chart.input.latitude.toFixed(4)}, ${chart.input.longitude.toFixed(4)})
-- Time zone: ${chart.input.timezone}
-
-PLACEMENTS (sign positions only — houses, Ascendant, Midheaven and Vertex are NOT available):
-${bodies}
-
-ASPECTS (top 40 by tightness):
-${aspects}
-
-NOTE: The Moon's degree may shift by up to ~13° across the birth day. Interpret the Moon by sign
-themes and note the possibility of an adjacent sign if it fell near a boundary.`;
+    return `BIRTH:\n- Name: ${chart.input.name}\n- Date: ${chart.input.date} (BIRTH TIME UNKNOWN)\n- Place: ${chart.input.place} (${chart.input.latitude.toFixed(4)}, ${chart.input.longitude.toFixed(4)})\n- Time zone: ${chart.input.timezone}\n\nPLACEMENTS (sign positions only — houses, Ascendant, Midheaven and Vertex are NOT available):\n${bodies}\n\nASPECTS (top 40 by tightness):\n${aspects}\n\nNOTE: The Moon's degree may shift by up to ~13° across the birth day. Interpret the Moon by sign\nthemes and note the possibility of an adjacent sign if it fell near a boundary.`;
   }
 
   const houses = chart.houses
     .map((cusp, i) => `  H${i + 1}: ${fmtDeg(cusp % 30)} (${cusp.toFixed(2)}°)`)
     .join("\n");
 
-  return `BIRTH:
-- Name: ${chart.input.name}
-- Date/Time: ${chart.input.date} ${chart.input.time} (${chart.input.timezone})
-- Place: ${chart.input.place} (${chart.input.latitude.toFixed(4)}, ${chart.input.longitude.toFixed(4)})
-- UTC: ${chart.utcIso}  JD(UT): ${chart.julianDayUT.toFixed(5)}
-
-PLACEMENTS:
-${bodies}
-
-ANGLES:
-- Ascendant: ${chart.ascendant.toFixed(4)}°
-- Midheaven: ${chart.midheaven.toFixed(4)}°
-
-HOUSE CUSPS (Placidus):
-${houses}
-
-ASPECTS (top 40 by tightness):
-${aspects}`;
+  return `BIRTH:\n- Name: ${chart.input.name}\n- Date/Time: ${chart.input.date} ${chart.input.time} (${chart.input.timezone})\n- Place: ${chart.input.place} (${chart.input.latitude.toFixed(4)}, ${chart.input.longitude.toFixed(4)})\n- UTC: ${chart.utcIso}  JD(UT): ${chart.julianDayUT.toFixed(5)}\n\nPLACEMENTS:\n${bodies}\n\nANGLES:\n- Ascendant: ${chart.ascendant.toFixed(4)}°\n- Midheaven: ${chart.midheaven.toFixed(4)}°\n\nHOUSE CUSPS (Placidus):\n${houses}\n\nASPECTS (top 40 by tightness):\n${aspects}`;
 }
 
 function synastryToPrompt(
@@ -145,32 +115,10 @@ function synastryToPrompt(
     .map((c) => `- Composite ${c.name}: ${c.sign} ${fmtDeg(c.signDegree)}`)
     .join("\n");
 
-  return `PARTNER (PERSON B) BIRTH:
-- Name: ${p.input.name}
-- Date${partnerTimeUnknown ? "" : "/Time"}: ${p.input.date}${partnerTimeUnknown ? " (BIRTH TIME UNKNOWN)" : ` ${p.input.time}`} (${p.input.timezone})
-- Place: ${p.input.place} (${p.input.latitude.toFixed(4)}, ${p.input.longitude.toFixed(4)})
-
-PERSON B PLACEMENTS:
-${b}
-
-CROSS-CHART (SYNASTRY) ASPECTS — Person A body to Person B body, tightest first:
-${cross || "- none within orb"}
-
-HOUSE OVERLAYS:
-${oAB || "- not available (birth time unknown)"}
-${oBA || "- not available (birth time unknown)"}
-
-COMPOSITE MIDPOINTS (the relationship chart):
-${composite}`;
+  return `PARTNER (PERSON B) BIRTH:\n- Name: ${p.input.name}\n- Date${partnerTimeUnknown ? "" : "/Time"}: ${p.input.date}${partnerTimeUnknown ? " (BIRTH TIME UNKNOWN)" : ` ${p.input.time}`} (${p.input.timezone})\n- Place: ${p.input.place} (${p.input.latitude.toFixed(4)}, ${p.input.longitude.toFixed(4)})\n\nPERSON B PLACEMENTS:\n${b}\n\nCROSS-CHART (SYNASTRY) ASPECTS — Person A body to Person B body, tightest first:\n${cross || "- none within orb"}\n\nHOUSE OVERLAYS:\n${oAB || "- not available (birth time unknown)"}\n${oBA || "- not available (birth time unknown)"}\n\nCOMPOSITE MIDPOINTS (the relationship chart):\n${composite}`;
 }
 
-const SYNASTRY_RULES = `SYNASTRY PROTOCOL (BINDING):
-- This is a two-chart relationship report. Person A is the client; Person B is the partner supplied.
-- Use ONLY the cross-chart aspects, house overlays and composite midpoints supplied. Never invent a contact.
-- Every claim about the relationship must cite a specific cross-chart aspect (with orb), a house overlay, or a composite placement.
-- Always name both people by name so the reading never becomes generic.
-- Describe both directions of each contact — what each person experiences is not the same thing.
-- Where a contact is difficult, say so plainly and give the working repair, not reassurance.`;
+const SYNASTRY_RULES = `SYNASTRY PROTOCOL (BINDING):\n- This is a two-chart relationship report. Person A is the client; Person B is the partner supplied.\n- Use ONLY the cross-chart aspects, house overlays and composite midpoints supplied. Never invent a contact.\n- Every claim about the relationship must cite a specific cross-chart aspect (with orb), a house overlay, or a composite placement.\n- Always name both people by name so the reading never becomes generic.\n- Describe both directions of each contact — what each person experiences is not the same thing.\n- Where a contact is difficult, say so plainly and give the working repair, not reassurance.`;
 
 export interface GeneratedReportPayload {
   reportId: string;
@@ -186,45 +134,9 @@ export interface GeneratedReportPayload {
   timeUnknown: boolean;
 }
 
-const MASTER_PROMPT = `You are an expert natal-chart analyst, report writer, and synthesis engine. Your task is to generate a long-form, premium, book-quality astrology report based only on the provided birth data and chart factors.
+const MASTER_PROMPT = `You are an expert natal-chart analyst, report writer, and synthesis engine. Your task is to generate a long-form, premium, book-quality astrology report based only on the provided birth data and chart factors.\n\nAccuracy rules:\n- Do not use vague filler, generic horoscope language, or unsupported claims.\n- Every major interpretation must be anchored to specific chart evidence: planets, signs, houses, aspects, dispositors, angularity, dignity and rulerships — but only those actually supplied in CHART DATA.\n- Distinguish between natal promise, timing activation, and psychological expression.\n- When multiple chart factors point to different possibilities, explain the tension rather than flattening it.\n- Be specific, practical, and internally consistent.\n- Do not claim certainty where the chart suggests probabilities or tendencies.\n\nOutput standards:\n- Write a long, premium, book-quality report with substantial depth.\n- Use clear section headings (## H2, ### H3) and a logical flow from overview to specifics to applications.\n- Every section must feel personal, insightful, emotionally intelligent, inspirational, practical and professionally written.\n- Never reuse repetitive paragraphs or boilerplate. Each section must be original prose.\n- Avoid filler. No emojis. No placeholder text of any kind.\n- The brand is always written exactly as "Cosmic Blueprint".\n\nRequired structure for every report: use the report definition's sections as the authoritative chapter structure and preserve their exact order. For long-form collections that define 25 or more exact chapters, do not add extra generic chapters beyond the definition. Every chapter must remain grounded in the supplied CHART DATA.\n\nCHAPTER BINDING RULES (STRICT):\n- Every chapter (## section) MUST open with a short "Chart Anchors" line in italics listing the exact placements and aspects from the CHART DATA that this chapter interprets.\n- Every paragraph MUST explicitly cite at least one real placement or aspect from the CHART DATA.\n- Never invent or hallucinate any position, aspect, degree, or house assignment. Use only the CHART DATA supplied.\n- Tropical zodiac, geocentric Western astrology.`;
 
-Accuracy rules:
-- Do not use vague filler, generic horoscope language, or unsupported claims.
-- Every major interpretation must be anchored to specific chart evidence: planets, signs, houses, aspects, dispositors, angularity, dignity and rulerships — but only those actually supplied in CHART DATA.
-- Distinguish between natal promise, timing activation, and psychological expression.
-- When multiple chart factors point to different possibilities, explain the tension rather than flattening it.
-- Be specific, practical, and internally consistent.
-- Do not claim certainty where the chart suggests probabilities or tendencies.
-
-Output standards:
-- Write a long, premium, book-quality report with substantial depth.
-- Use clear section headings (## H2, ### H3) and a logical flow from overview to specifics to applications.
-- Every section must feel personal, insightful, emotionally intelligent, inspirational, practical and professionally written.
-- Never reuse repetitive paragraphs or boilerplate. Each section must be original prose.
-- Avoid filler. No emojis. No placeholder text of any kind.
-- The brand is always written exactly as "Cosmic Blueprint".
-
-Required structure for every report: use the report definition's sections as the authoritative chapter structure and preserve their exact order. For long-form collections that define 25 or more exact chapters, do not add extra generic chapters beyond the definition. Every chapter must remain grounded in the supplied CHART DATA.\n\nCHAPTER BINDING RULES (STRICT):
-- Every chapter (## section) MUST open with a short "Chart Anchors" line in italics listing the exact placements and aspects from the CHART DATA that this chapter interprets.
-- Every paragraph MUST explicitly cite at least one real placement or aspect from the CHART DATA.
-- Never invent or hallucinate any position, aspect, degree, or house assignment. Use only the CHART DATA supplied.
-- Tropical zodiac, geocentric Western astrology.`;
-
-const UNKNOWN_TIME_RULES = `UNKNOWN BIRTH TIME PROTOCOL (ABSOLUTELY BINDING):
-The client does not know their birth time. You therefore have NO Ascendant, NO Midheaven, NO house
-cusps, NO house placements, NO house rulers, and NO time-sensitive timing techniques (no solar-arc
-directions to angles, no house-based transit timing, no progressed angles).
-
-- NEVER estimate, guess, imply, or invent a Rising Sign, Midheaven, house, or house ruler.
-- NEVER write phrases such as "your rising sign", "your ascendant", "the 7th house", "house ruler",
-  or any ordinal house reference.
-- Instead, EXPAND depth in: planetary sign meanings, planetary aspects and aspect patterns,
-  psychological archetypes, life themes, spiritual development, career guidance, love dynamics,
-  strengths, challenges, growth opportunities, practical advice, reflection exercises, journaling
-  prompts, and personalized affirmations.
-- State once, early and warmly, that the report is built from the birth information available and
-  that its depth comes from signs, aspects and archetypes rather than houses.
-- The finished report must be the SAME premium length and quality as a timed report.`;
+const UNKNOWN_TIME_RULES = `UNKNOWN BIRTH TIME PROTOCOL (ABSOLUTELY BINDING):\nThe client does not know their birth time. You therefore have NO Ascendant, NO Midheaven, NO house\ncusps, NO house placements, NO house rulers, and NO time-sensitive timing techniques (no solar-arc\ndirections to angles, no house-based transit timing, no progressed angles).\n\n- NEVER estimate, guess, imply, or invent a Rising Sign, Midheaven, house, or house ruler.\n- NEVER write phrases such as "your rising sign", "your ascendant", "the 7th house", "house ruler",\n  or any ordinal house reference.\n- Instead, EXPAND depth in: planetary sign meanings, planetary aspects and aspect patterns,\n  psychological archetypes, life themes, spiritual development, career guidance, love dynamics,\n  strengths, challenges, growth opportunities, practical advice, reflection exercises, journaling\n  prompts, and personalized affirmations.\n- State once, early and warmly, that the report is built from the birth information available and\n  that its depth comes from signs, aspects and archetypes rather than houses.\n- The finished report must be the SAME premium length and quality as a timed report.`;
 
 /** Resolve a report definition from the admin-managed database catalog, falling back to code. */
 async function resolveDefinition(reportId: string): Promise<CatalogEntry | null> {
@@ -262,8 +174,8 @@ export async function generateReportMarkdown(input: {
   chart: ReportChartInput;
   partner?: SynastryInput;
 }): Promise<GeneratedReportPayload> {
-  const key = process.env.LOVABLE_API_KEY;
-  if (!key) throw new Error("Missing LOVABLE_API_KEY");
+  const { model, source: modelSource, apiKey: key } = resolveWritingModel();
+  console.log("[report-core] writing model", { reportId: input.reportId, modelSource });
 
   const def =
     (await resolveDefinition(input.reportId)) ??
@@ -271,45 +183,23 @@ export async function generateReportMarkdown(input: {
   if (!def) throw new Error(`Unknown report: ${input.reportId}`);
 
   const timeUnknown = input.chart.input.timeUnknown === true;
-  const gateway = createLovableAiGatewayProvider(key);
-  const model = gateway("google/gemini-3-flash-preview");
   const baseChartBlock = chartToPrompt(input.chart, timeUnknown);
   const chartBlock = input.partner
     ? `${baseChartBlock}\n\n${synastryToPrompt(input.chart.input.name, input.partner)}`
     : baseChartBlock;
 
-  const userDataBlock = `USER DATA INPUT
-- Birth date: ${input.chart.input.date}
-- Birth time: ${timeUnknown ? "UNKNOWN (not provided by the client)" : input.chart.input.time}
-- Birthplace: ${input.chart.input.place}
-- Time zone: ${input.chart.input.timezone}
-- Chart system: Tropical / ${timeUnknown ? "no house system (time unknown)" : "Placidus"} / Geocentric Western
-- Report focus: ${def.title}
-- Special priorities: ${def.tagline}`;
+  const userDataBlock = `USER DATA INPUT\n- Birth date: ${input.chart.input.date}\n- Birth time: ${timeUnknown ? "UNKNOWN (not provided by the client)" : input.chart.input.time}\n- Birthplace: ${input.chart.input.place}\n- Time zone: ${input.chart.input.timezone}\n- Chart system: Tropical / ${timeUnknown ? "no house system (time unknown)" : "Placidus"} / Geocentric Western\n- Report focus: ${def.title}\n- Special priorities: ${def.tagline}`;
 
   const sectionsList = def.sections.map((s, i) => `${i + 1}. ${s}`).join("\n");
 
   const reportModule = def.promptModule
     ? def.promptModule
-    : `REPORT FRAMING:
-${def.systemFraming}
-
-Required sections (use exactly these as ## H2 headings, in order):
-${sectionsList}`;
+    : `REPORT FRAMING:\n${def.systemFraming}\n\nRequired sections (use exactly these as ## H2 headings, in order):\n${sectionsList}`;
 
   let system = timeUnknown ? `${MASTER_PROMPT}\n\n${UNKNOWN_TIME_RULES}` : MASTER_PROMPT;
   if (input.partner) system = `${system}\n\n${SYNASTRY_RULES}`;
 
-  const prompt = `${userDataBlock}
-
-${reportModule}
-
-Target length: ~${def.targetWords} words.
-
-CHART DATA:
-${chartBlock}
-
-Write the **${def.title}** report for ${input.chart.input.name}${
+  const prompt = `${userDataBlock}\n\n${reportModule}\n\nTarget length: ~${def.targetWords} words.\n\nCHART DATA:\n${chartBlock}\n\nWrite the **${def.title}** report for ${input.chart.input.name}${
     input.partner ? ` and ${input.partner.chart.input.name}` : ""
   } now. Do not include a preamble or restate the chart data verbatim; weave it into interpretation.`;
 
